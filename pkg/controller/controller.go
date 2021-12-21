@@ -25,14 +25,19 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 
 			// Create resources and wait for creation
 			errors := c.create(test.ObjectsList)
-			time.Sleep(test.Timeout * time.Second)
+			timeout, err := time.ParseDuration(test.Timeout)
+			if err != nil {
+				logrus.Warnf("Couldn't parse test timeout, defaulting to 30s")
+				timeout, _ = time.ParseDuration("30s")
+			}
+			time.Sleep(timeout)
 
 			// Run the actual tests
 			fmt.Println(c.Assert(test, errors))
 
 			// Delete resources and wait for deletion
 			c.delete(test.ObjectsList)
-			time.Sleep(test.Timeout * time.Second)
+			time.Sleep(timeout)
 		}
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)

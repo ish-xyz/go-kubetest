@@ -66,12 +66,4 @@ func exec(cmd *cobra.Command, args []string) {
 	testSuites, _ := ldr.LoadTestSuites(testsdir)
 
 	ctrl.Run(testSuites, time.Duration(interval)*time.Second)
-	/*
-		TODO:
-		- Create provisioner
-		- Create controller
-		- Create loader
-		- Load test files
-		- Run Controller with TestsList
-	*/
 }

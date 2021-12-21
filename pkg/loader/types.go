@@ -1,8 +1,6 @@
 package loader
 
 import (
-	"time"
-
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -29,10 +27,10 @@ type Assertion struct {
 }
 
 type TestDefinition struct {
-	Name           string        `yaml:"name"`
-	Manifest       string        `yaml:"manifest"`
-	ExpectedErrors int           `yaml:"expectedErrors"`
-	Timeout        time.Duration `yaml:"timeout"`
+	Name           string `yaml:"name"`
+	Manifest       string `yaml:"manifest"`
+	ExpectedErrors int    `yaml:"expectedErrors"`
+	Timeout        string `yaml:"timeout"`
 	ObjectsList    []LoadedObject
 	Assert         []Assertion `yaml:"assert"`
 	Status         string      // TODO DeleteError, CreateError, Fail, Success
