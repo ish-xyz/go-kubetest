@@ -1,6 +1,8 @@
 package loader
 
 import (
+	"time"
+
 	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
@@ -17,15 +19,22 @@ type LoadedObject struct {
 	Mapping *meta.RESTMapping
 }
 
+type Assertion struct {
+	ApiVersion     string                 `yaml:"apiVersion"`
+	Kind           string                 `yaml:"kind"`
+	Namespace      string                 `yaml:"namespace"`
+	Selectors      map[string]interface{} `yaml:"selectors"`
+	Count          int                    `yaml:"count"`
+	ExpectedErrors int                    `yaml:"expectedErrors"`
+}
+
 type TestDefinition struct {
-	ID          int    `yaml:"id"`
-	Manifest    string `yaml:"manifest"`
+	ID          int           `yaml:"id"`
+	Manifest    string        `yaml:"manifest"`
+	Timeout     time.Duration `yaml:"timeout"`
 	ObjectsList []LoadedObject
-	Assert      []struct {
-		Selectors map[string]interface{} `yaml:"selectors"`
-		Count     int                    `yaml:"count"`
-	}
-	Status string // DeleteError, CreateError, Fail, Success
+	Assert      Assertion `yaml:"assert"`
+	Status      string    // TODO DeleteError, CreateError, Fail, Success
 }
 
 type TestSuite struct {

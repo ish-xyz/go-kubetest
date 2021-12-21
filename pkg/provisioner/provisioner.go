@@ -4,11 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/discovery/cached/memory"
@@ -43,7 +46,7 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedOb
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
-	object, err := createMapper(object, p.Config)
+	object, err := getMapperWithObject(object, p.Config)
 	if err != nil {
 		return loader.LoadedObject{}, err
 	}
@@ -69,7 +72,7 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
-	object, err := createMapper(object, p.Config)
+	object, err := getMapperWithObject(object, p.Config)
 	if err != nil {
 		return loader.LoadedObject{}, err
 	}
@@ -92,57 +95,90 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 }
 
 // List Resources dynamically in a Kubernetes cluster using fieldselectors
-func (p *Provisioner) ListWithSelectors(ctx context.Context, object loader.LoadedObject, fieldselectors string) (*unstructured.UnstructuredList, error) {
+func (p *Provisioner) ListWithSelectors(
+	ctx context.Context,
+	apiVersion string,
+	kind string,
+	namespace string,
+	selectors map[string]interface{}) (*unstructured.UnstructuredList, error) {
 
+	var labelSelector string
+	var fieldSelector string
 	var dr dynamic.ResourceInterface
-	obj := object.Object
-	object, err := createMapper(object, p.Config)
+
+	// Init discovery client and mapper
+	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
 	if err != nil {
+		logrus.Debugln(err)
+		return nil, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	// Get GVR
+	mapping, err := mapper.RESTMapping(
+		schema.ParseGroupKind(kind),
+		apiVersion,
+	)
+	if err != nil {
+		logrus.Debugln(err)
 		return nil, err
 	}
 
-	// Get Rest Interface (Cluster or Namespaced resource)
-	mapping := object.Mapping
 	dr = p.DynClient.Resource(mapping.Resource)
-	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		dr = p.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
+	if namespace != "" {
+		dr = p.DynClient.Resource(mapping.Resource).Namespace(namespace)
 	}
 
-	//TODO Create field selector dinamically
-	/*selectors := ""
+	// Composing selectors
+	for k, v := range selectors {
+		if strings.HasPrefix(k, "metadata.labels") {
+			labelSelector = fmt.Sprintf("%v=%v,%s", strings.ReplaceAll(k, "metadata.labels.", ""), v, labelSelector)
+		} else {
+			fieldSelector = fmt.Sprintf("%v=%v,%s", k, v, fieldSelector)
+		}
+	}
 
-	for k, v := range fieldselectors {
-		selectors = fmt.Sprintf("%s,%v=%v", selectors, k, v)
-	}*/
-	o, _ := dr.List(ctx, metav1.ListOptions{FieldSelector: fieldselectors})
-	fmt.Println(len(o.Items))
+	fieldSelector = strings.TrimSuffix(fieldSelector, ",")
+	labelSelector = strings.TrimSuffix(labelSelector, ",")
 
-	return nil, nil
+	logrus.Debugf("Using selectors:\nLabelSelector: %v\nFieldSelector: %v\n", labelSelector, fieldSelector)
+
+	retrievedObjects, _ := dr.List(ctx, metav1.ListOptions{
+		FieldSelector: strings.TrimSuffix(fieldSelector, ","),
+		LabelSelector: strings.TrimSuffix(labelSelector, ","),
+	})
+	if err != nil {
+		logrus.Debugln(err)
+		return nil, err
+	}
+
+	logrus.Debug("Objects retrieved %v", retrievedObjects)
+
+	return retrievedObjects, nil
 }
 
 // Create Mapper and return a copy of object with the Mapper set
-func createMapper(object loader.LoadedObject, cfg *rest.Config) (loader.LoadedObject, error) {
+func getMapperWithObject(object loader.LoadedObject, cfg *rest.Config) (loader.LoadedObject, error) {
 
 	obj := object.Object
-	mapping := object.Mapping
 
-	// Skip if mapping is passed
-	if mapping == nil {
-		// Init discovery client and mapper
-		dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-		if err != nil {
-			return loader.LoadedObject{}, err
-		}
-		mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	// Init discovery client and mapper
+	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
+	if err != nil {
+		return loader.LoadedObject{}, err
+	}
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 
-		// Get GVR
-		mapping, err = mapper.RESTMapping(
-			obj.GroupVersionKind().GroupKind(),
-			obj.GroupVersionKind().Version,
-		)
-		if err != nil {
-			return loader.LoadedObject{}, err
-		}
+	// Get GVR
+	mapping, err := mapper.RESTMapping(
+		obj.GroupVersionKind().GroupKind(),
+		obj.GroupVersionKind().Version,
+	)
+
+	fmt.Println(mapping)
+	fmt.Println(mapping.Resource)
+
+	if err != nil {
+		return loader.LoadedObject{}, err
 	}
 
 	// Add Mapping to the copy of the object
@@ -150,3 +186,5 @@ func createMapper(object loader.LoadedObject, cfg *rest.Config) (loader.LoadedOb
 
 	return object, nil
 }
+
+// TODO Watch for resources till timeout

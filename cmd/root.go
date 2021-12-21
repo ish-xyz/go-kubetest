@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"context"
+	"time"
 
 	"github.com/ish-xyz/go-kubetest/pkg/controller"
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
@@ -13,7 +13,6 @@ import (
 
 var (
 	// Used for flags
-	selector   string
 	testsdir   string // required flag
 	kubeconfig string
 	interval   int
@@ -37,7 +36,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&testsdir, "testsdir", "", "The directory with tests definitions")
 	rootCmd.MarkPersistentFlagRequired("testsdir")
 
-	rootCmd.PersistentFlags().StringVar(&selector, "selector", "", "")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
@@ -65,13 +63,9 @@ func exec(cmd *cobra.Command, args []string) {
 	prv := provisioner.NewProvisioner(restConfig)
 	ctrl := controller.NewController(prv)
 
-	//ctrl.Run(nil, ctrlConfig.Interval)
-
-	logrus.Println(ctrl)
-
 	testSuites, _ := ldr.LoadTestSuites(testsdir)
 
-	prv.ListWithSelectors(context.TODO(), testSuites.TestSuites[0].Tests[0].ObjectsList[0], selector)
+	ctrl.Run(testSuites, 600*time.Second)
 	/*
 		TODO:
 		- Create provisioner
