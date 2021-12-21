@@ -48,21 +48,21 @@ func (ldr *Loader) LoadManifests(filepath string) ([]LoadedObject, error) {
 }
 
 // Load multiple testSuite files and related Manifests/Objects
-func (ldr *Loader) LoadTestSuites(testsDir string) (TestSuitesList, error) {
+func (ldr *Loader) LoadTestSuites(testsDir string) ([]TestDefinition, error) {
 
-	var testSuites TestSuitesList
+	var testSuite []TestDefinition
 
 	match := testsDir + "/*yaml"
 	logrus.Debugf("searching for yaml files in %s", match)
 	files, err := filepath.Glob(match)
 	if err != nil {
-		return TestSuitesList{}, err
+		return []TestDefinition{}, err
 	}
 	logrus.Debugf("files found: %v", files)
 
 	for _, file := range files {
 
-		test := TestSuite{}
+		test := []TestDefinition{}
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
 			logrus.Errorf("Failed to load test file %s", file)
@@ -76,20 +76,20 @@ func (ldr *Loader) LoadTestSuites(testsDir string) (TestSuitesList, error) {
 			logrus.Debug(err)
 		}
 
-		for index, testDef := range test.Tests {
+		for index, testDef := range test {
 			testDef.ObjectsList, err = ldr.LoadManifests(fmt.Sprintf("%s/%s", testsDir, testDef.Manifest))
 			if err != nil {
-				logrus.Errorf("Error while loading manifests object in test id %s", testDef.ID)
+				logrus.Errorf("Error while loading manifests object in test %s", testDef.Name)
 				logrus.Debug(err)
 				continue
 			}
-			test.Tests[index] = testDef
+			test[index] = testDef
 		}
 
-		testSuites.TestSuites = append(testSuites.TestSuites, test)
+		testSuite = append(testSuite, test...)
 	}
 
-	logrus.Debugf("TestSuites loaded correctly %v", testSuites)
+	logrus.Debugf("Loaded tests: %v", testSuite)
 
-	return testSuites, nil
+	return testSuite, nil
 }

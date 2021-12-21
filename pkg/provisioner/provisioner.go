@@ -140,7 +140,7 @@ func (p *Provisioner) ListWithSelectors(
 	fieldSelector = strings.TrimSuffix(fieldSelector, ",")
 	labelSelector = strings.TrimSuffix(labelSelector, ",")
 
-	logrus.Debugf("Using selectors:\nLabelSelector: %v\nFieldSelector: %v\n", labelSelector, fieldSelector)
+	logrus.Debugf("Using selectors: %v && %v", labelSelector, fieldSelector)
 
 	retrievedObjects, _ := dr.List(ctx, metav1.ListOptions{
 		FieldSelector: strings.TrimSuffix(fieldSelector, ","),
@@ -151,7 +151,7 @@ func (p *Provisioner) ListWithSelectors(
 		return nil, err
 	}
 
-	logrus.Debug("Objects retrieved %v", retrievedObjects)
+	logrus.Debugf("Number of objects retrieved %d", len(retrievedObjects.Items))
 
 	return retrievedObjects, nil
 }
@@ -173,9 +173,6 @@ func getMapperWithObject(object loader.LoadedObject, cfg *rest.Config) (loader.L
 		obj.GroupVersionKind().GroupKind(),
 		obj.GroupVersionKind().Version,
 	)
-
-	fmt.Println(mapping)
-	fmt.Println(mapping.Resource)
 
 	if err != nil {
 		return loader.LoadedObject{}, err

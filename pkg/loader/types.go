@@ -29,19 +29,11 @@ type Assertion struct {
 }
 
 type TestDefinition struct {
-	ID          int           `yaml:"id"`
-	Manifest    string        `yaml:"manifest"`
-	Timeout     time.Duration `yaml:"timeout"`
-	ObjectsList []LoadedObject
-	Assert      Assertion `yaml:"assert"`
-	Status      string    // TODO DeleteError, CreateError, Fail, Success
-}
-
-type TestSuite struct {
-	Name  string           `yaml:"name"`
-	Tests []TestDefinition `yaml:"tests"`
-}
-
-type TestSuitesList struct {
-	TestSuites []TestSuite
+	Name           string        `yaml:"name"`
+	Manifest       string        `yaml:"manifest"`
+	ExpectedErrors int           `yaml:"expectedErrors"`
+	Timeout        time.Duration `yaml:"timeout"`
+	ObjectsList    []LoadedObject
+	Assert         []Assertion `yaml:"assert"`
+	Status         string      // TODO DeleteError, CreateError, Fail, Success
 }
