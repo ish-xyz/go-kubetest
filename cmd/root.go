@@ -65,7 +65,7 @@ func exec(cmd *cobra.Command, args []string) {
 
 	testSuites, _ := ldr.LoadTestSuites(testsdir)
 
-	ctrl.Run(testSuites, 600*time.Second)
+	ctrl.Run(testSuites, time.Duration(interval)*time.Second)
 	/*
 		TODO:
 		- Create provisioner

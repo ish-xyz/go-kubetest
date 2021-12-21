@@ -21,12 +21,6 @@ import (
 	"k8s.io/client-go/restmapper"
 )
 
-type Provisioner struct {
-	Client    *kubernetes.Clientset
-	DynClient dynamic.Interface
-	Config    *rest.Config
-}
-
 // Return a provisioner instance used to create, update & delete
 // 		cluster-wide or namespaced resources on Kubernetes cluster
 func NewProvisioner(cfg *rest.Config) *Provisioner {
