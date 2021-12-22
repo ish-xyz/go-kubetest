@@ -18,19 +18,18 @@ type LoadedObject struct {
 }
 
 type Assertion struct {
-	ApiVersion     string                 `yaml:"apiVersion"`
-	Kind           string                 `yaml:"kind"`
-	Namespace      string                 `yaml:"namespace"`
-	Selectors      map[string]interface{} `yaml:"selectors"`
-	Count          int                    `yaml:"count"`
-	ExpectedErrors int                    `yaml:"expectedErrors"`
+	ApiVersion        string                 `yaml:"apiVersion"`
+	Kind              string                 `yaml:"kind"`
+	Namespace         string                 `yaml:"namespace"`
+	Selectors         map[string]interface{} `yaml:"selectors"`
+	ExpectedResources int                    `yaml:"expectedResources"`
 }
 
 type TestDefinition struct {
-	Name           string `yaml:"name"`
-	Manifest       string `yaml:"manifest"`
-	ExpectedErrors int    `yaml:"expectedErrors"`
-	Timeout        string `yaml:"timeout"`
+	Name           string   `yaml:"name"`
+	Manifest       string   `yaml:"manifest"`
+	ExpectedErrors []string `yaml:"expectedErrors"`
+	MaxWait        string   `yaml:"maxWait"`
 	ObjectsList    []LoadedObject
 	Assert         []Assertion `yaml:"assert"`
 	Status         string      // TODO DeleteError, CreateError, Fail, Success

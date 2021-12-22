@@ -6,9 +6,10 @@ type Controller struct {
 	Provisioner *provisioner.Provisioner
 }
 
-type TestReport struct {
-	Name          string
-	Failed        int
-	Passed        int
-	ErrorMessages []string
+type AssertionResult struct {
+	ID       int
+	Type     string
+	TestName string
+	Message  string
+	Passed   bool
 }

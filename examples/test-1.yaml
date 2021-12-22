@@ -1,13 +1,13 @@
 - name: namespace creation
   manifest: ./manifests/namespace.yaml
-  expectedErrors: 0
-  timeout: 30s
+  maxWait: 300s
+  expectedErrors:
+  - "some regex here"
   assert:
   - apiVersion: v1
     kind: Namespace
-    namespace: ""
     selectors:
-      metadata.name: namespace-1
+    - metadata.name: namespace-1
       status.phase: Active
       metadata.labels.myCustomLabel: myCustomValue
-    count: 1
+    expectedResources: 1
