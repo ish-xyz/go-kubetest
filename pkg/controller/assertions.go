@@ -13,18 +13,15 @@ func (c *Controller) Assert(test loader.TestDefinition, errors []string) []Asser
 
 	var result []AssertionResult
 
-	result = append(
-		result,
-		c.expectedErrors(test.Name, test.ExpectedErrors, errors),
-		c.expectedObjects(test.Name, test),
-		c.expectedErrorsCount(test.Name, test.ExpectedErrors, errors)...,
-	)
+	// TODO I hate this bit, need a better way to chain arrays
+	result = append(result, c.expectedErrors(test.Name, test.ExpectedErrors, errors)...)
+	result = append(result, c.expectedObjects(test.Name, test)...)
 
 	return result
 }
 
 // Check if the expected Errors match the actual errors
-func (c *Controller) expectedErrors(testName string, expErrors, actErrors []string) []AssertionResult {
+func (c *Controller) expectedErrorMsgs(testName string, expErrors, actErrors []string) []AssertionResult {
 
 	var result []AssertionResult
 
@@ -51,8 +48,10 @@ func (c *Controller) expectedErrors(testName string, expErrors, actErrors []stri
 }
 
 // Check if the number of errors occured during the resource creation is expected
-func (c *Controller) expectedErrorsCount(testName string, expErrors, actErrors []string) []AssertionResult {
-	//return len(expErrors) == len(actErrors)
+func (c *Controller) expectedErrors(testName string, expErrors, actErrors []string) []AssertionResult {
+
+	var result []AssertionResult
+
 	assertRes := AssertionResult{
 		ID:       0,
 		Type:     "expected_errors_count",
@@ -62,14 +61,18 @@ func (c *Controller) expectedErrorsCount(testName string, expErrors, actErrors [
 	}
 	if len(expErrors) != len(actErrors) {
 		assertRes.Message = fmt.Sprintf(
-			"expected %d objects, got %d instead.",
+			"expected %d errors, got %d instead.",
 			len(expErrors),
 			len(actErrors),
 		)
 		assertRes.Passed = false
+	} else {
+		result = append(result, c.expectedErrorMsgs(testName, expErrors, actErrors)...)
 	}
 
-	return []AssertionResult{assertRes}
+	result = append(result, assertRes)
+
+	return result
 }
 
 // Check if the retrieved objects match the expected count

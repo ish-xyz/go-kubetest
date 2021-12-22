@@ -58,7 +58,7 @@ func (ldr *Loader) LoadTestSuites(testsDir string) ([]TestDefinition, error) {
 	if err != nil {
 		return []TestDefinition{}, err
 	}
-	logrus.Debugf("files found: %v", files)
+	logrus.Infof("files found: %v", files)
 
 	for _, file := range files {
 

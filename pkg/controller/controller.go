@@ -32,7 +32,7 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 			c.waitForResources(test)
 
 			// Run the actual tests
-			c.Assert(test, errors)
+			fmt.Println(c.Assert(test, errors))
 
 			// Delete resources and wait for deletion
 			c.teardown(test.ObjectsList)
@@ -66,7 +66,7 @@ func (c *Controller) setup(objects []loader.LoadedObject) []string {
 			logrus.Debugln(err)
 			errors = append(errors, fmt.Sprintf("%v", err))
 		} else {
-			logrus.Debugf("Resource created %s\n", obj.Object.GetName())
+			logrus.Debugf("Setup: resource created %s\n", obj.Object.GetName())
 		}
 	}
 
@@ -82,7 +82,7 @@ func (c *Controller) teardown(objects []loader.LoadedObject) {
 			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.Object.GetName())
 			logrus.Errorln(err)
 		} else {
-			logrus.Info("Teardown: Resource deleted %s\n", obj.Object.GetName())
+			logrus.Infof("Teardown: Resource deleted %s\n", obj.Object.GetName())
 		}
 	}
 }
