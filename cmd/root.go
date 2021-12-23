@@ -3,8 +3,10 @@ package cmd
 import (
 	"time"
 
+	"github.com/ish-xyz/go-kubetest/pkg/assert"
 	"github.com/ish-xyz/go-kubetest/pkg/controller"
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
+	"github.com/ish-xyz/go-kubetest/pkg/metrics"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -60,10 +62,12 @@ func exec(cmd *cobra.Command, args []string) {
 		logrus.Fatal(cmd.Help())
 	}
 
-	prv := provisioner.NewProvisioner(restConfig)
-	ctrl := controller.NewController(prv)
+	testsObjects, _ := ldr.LoadTestSuites(testsdir)
 
-	testSuites, _ := ldr.LoadTestSuites(testsdir)
+	provisionerInstance := provisioner.NewProvisioner(restConfig)
+	assertInstance := assert.NewAssert(provisionerInstance)
+	metricsInstance := metrics.NewServer()
+	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
 
-	ctrl.Run(testSuites, time.Duration(interval)*time.Second)
+	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
 }

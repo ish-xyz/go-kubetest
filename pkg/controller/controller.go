@@ -5,23 +5,32 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/ish-xyz/go-kubetest/pkg/assert"
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
+	"github.com/ish-xyz/go-kubetest/pkg/metrics"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
 )
 
 const defaultMaxWait = "60s"
 
-func NewController(prv *provisioner.Provisioner) *Controller {
+func NewController(prv *provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
 	return &Controller{
-		Provisioner: prv,
+		Provisioner:   prv,
+		MetricsServer: ms,
+		Assert:        a,
 	}
 }
 
 func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) {
 
+	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
+	go c.MetricsServer.Serve()
+
 	logrus.Info("Starting controller")
 	for {
+
+		metricsValues := metrics.NewMetricsValues()
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
 
@@ -32,7 +41,8 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 			c.waitForResources(test)
 
 			// Run the actual tests
-			fmt.Println(c.Assert(test, errors))
+			result := c.Assert.Run(test, errors)
+			updateMetricsValues(metricsValues, result)
 
 			// Delete resources and wait for deletion
 			c.teardown(test.ObjectsList)
@@ -40,9 +50,13 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 			// Wait for resources to be deleted
 			c.waitForResources(test)
 		}
+		logrus.Debug("Push new metrics to server")
+		c.pushMetrics(metricsValues)
+
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
 	}
+
 }
 
 func (c *Controller) waitForResources(test loader.TestDefinition) {
@@ -85,4 +99,35 @@ func (c *Controller) teardown(objects []loader.LoadedObject) {
 			logrus.Infof("Teardown: Resource deleted %s\n", obj.Object.GetName())
 		}
 	}
+}
+
+func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.TestResult) {
+	metricsValues.TotalTests += 1
+
+	// TODO this is ugly: init map if nil (only for first execution)
+	if metricsValues.TestStatus == nil {
+		metricsValues.TestStatus = map[string]float64{}
+	}
+
+	if result.Passed {
+		metricsValues.TotalTestsPassed += 1
+		metricsValues.TestStatus[result.Name] = 1
+	} else {
+		metricsValues.TotalTestsFailed += 1
+		metricsValues.TestStatus[result.Name] = 0
+	}
+}
+
+func (c *Controller) pushMetrics(metricsValues *metrics.MetricsValues) {
+
+	rMetrics := c.MetricsServer.Metrics
+
+	for key, value := range metricsValues.TestStatus {
+		rMetrics.TestStatus.WithLabelValues(key).Set(value)
+	}
+
+	rMetrics.TotalTestsFailed.Set(metricsValues.TotalTestsFailed)
+	rMetrics.TotalTestsPassed.Set(metricsValues.TotalTestsPassed)
+	rMetrics.TotalTests.Set(metricsValues.TotalTests)
+
 }

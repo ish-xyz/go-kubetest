@@ -1,4 +1,4 @@
-package controller
+package assert
 
 import (
 	"context"
@@ -6,35 +6,51 @@ import (
 	"regexp"
 
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
+	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
 )
 
-func (c *Controller) Assert(test loader.TestDefinition, errors []string) []AssertionResult {
+func NewAssert(prv *provisioner.Provisioner) *Assert {
+	return &Assert{
+		Provisioner: prv,
+	}
+}
 
-	var result []AssertionResult
+func (a *Assert) Run(test loader.TestDefinition, errors []string) TestResult {
 
-	// TODO I hate this bit, need a better way to chain arrays
-	result = append(result, c.expectedErrors(test.Name, test.ExpectedErrors, errors)...)
-	result = append(result, c.expectedObjects(test.Name, test)...)
+	testResult := &TestResult{
+		Name:              test.Name,
+		Passed:            true,
+		AssertionsResults: []AssertionResult{},
+	}
 
-	return result
+	testResult.AssertionsResults = append(
+		testResult.AssertionsResults,
+		testResult.expectedErrors(test.ExpectedErrors, errors)...,
+	)
+	testResult.AssertionsResults = append(
+		testResult.AssertionsResults,
+		testResult.expectedObjects(a.Provisioner, test)...,
+	)
+
+	return *testResult
 }
 
 // Check if the expected Errors match the actual errors
-func (c *Controller) expectedErrorMsgs(testName string, expErrors, actErrors []string) []AssertionResult {
+func (t *TestResult) expectedErrorMsgs(expErrors, actErrors []string) []AssertionResult {
 
 	var result []AssertionResult
 
 	for index, errorMessage := range expErrors {
 		assertRes := AssertionResult{
-			ID:       index,
-			Type:     "expected_errors",
-			TestName: testName,
-			Passed:   true,
-			Message:  "OK",
+			ID:      index,
+			Type:    "expected_errors",
+			Passed:  true,
+			Message: "OK",
 		}
 		match, _ := regexp.MatchString(errorMessage, actErrors[index])
 		if !match {
+			t.Passed = false
 			assertRes.Passed = false
 			assertRes.Message = fmt.Sprintf(
 				"expected error: %s \nreturned error: %s",
@@ -48,26 +64,26 @@ func (c *Controller) expectedErrorMsgs(testName string, expErrors, actErrors []s
 }
 
 // Check if the number of errors occured during the resource creation is expected
-func (c *Controller) expectedErrors(testName string, expErrors, actErrors []string) []AssertionResult {
+func (t *TestResult) expectedErrors(expErrors, actErrors []string) []AssertionResult {
 
 	var result []AssertionResult
 
 	assertRes := AssertionResult{
-		ID:       0,
-		Type:     "expected_errors_count",
-		TestName: testName,
-		Message:  "OK",
-		Passed:   true,
+		ID:      0,
+		Type:    "expected_errors_count",
+		Message: "OK",
+		Passed:  true,
 	}
 	if len(expErrors) != len(actErrors) {
+		t.Passed = false
+		assertRes.Passed = false
 		assertRes.Message = fmt.Sprintf(
 			"expected %d errors, got %d instead.",
 			len(expErrors),
 			len(actErrors),
 		)
-		assertRes.Passed = false
 	} else {
-		result = append(result, c.expectedErrorMsgs(testName, expErrors, actErrors)...)
+		result = append(result, t.expectedErrorMsgs(expErrors, actErrors)...)
 	}
 
 	result = append(result, assertRes)
@@ -76,21 +92,20 @@ func (c *Controller) expectedErrors(testName string, expErrors, actErrors []stri
 }
 
 // Check if the retrieved objects match the expected count
-func (c *Controller) expectedObjects(testName string, test loader.TestDefinition) []AssertionResult {
+func (t *TestResult) expectedObjects(prv *provisioner.Provisioner, test loader.TestDefinition) []AssertionResult {
 
 	var result []AssertionResult
 
 	for index, assertion := range test.Assert {
 
 		assertRes := AssertionResult{
-			ID:       index,
-			Type:     "expected_objects",
-			TestName: testName,
-			Message:  "OK",
-			Passed:   true,
+			ID:      index,
+			Type:    "expected_objects",
+			Message: "OK",
+			Passed:  true,
 		}
 
-		objects, err := c.Provisioner.ListWithSelectors(
+		objects, err := prv.ListWithSelectors(
 			context.TODO(),
 			assertion.ApiVersion,
 			assertion.Kind,
@@ -98,13 +113,15 @@ func (c *Controller) expectedObjects(testName string, test loader.TestDefinition
 			assertion.Selectors,
 		)
 		if err != nil {
+			t.Passed = false
+			assertRes.Passed = false
 			message := "Failed to retrieve objects, possible internal error"
 			assertRes.Message = message
-			assertRes.Passed = false
 			logrus.Debugln(message)
 			logrus.Debugln(err)
 		} else {
 			if len(objects.Items) != assertion.ExpectedResources {
+				t.Passed = false
 				assertRes.Passed = false
 				assertRes.Message = fmt.Sprintf(
 					"expected %d objects, got %d instead.",
