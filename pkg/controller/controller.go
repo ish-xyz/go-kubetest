@@ -42,7 +42,7 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 
 			// Run the actual tests
 			result := c.Assert.Run(test, errors)
-			updateMetricsValues(metricsValues, result)
+			metricsValues = updateMetricsValues(metricsValues, result)
 
 			// Delete resources and wait for deletion
 			c.teardown(test.ObjectsList)
@@ -101,7 +101,7 @@ func (c *Controller) teardown(objects []loader.LoadedObject) {
 	}
 }
 
-func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.TestResult) {
+func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.TestResult) *metrics.MetricsValues {
 	metricsValues.TotalTests += 1
 
 	// TODO this is ugly: init map if nil (only for first execution)
@@ -116,6 +116,8 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.Tes
 		metricsValues.TotalTestsFailed += 1
 		metricsValues.TestStatus[result.Name] = 0
 	}
+
+	return metricsValues
 }
 
 func (c *Controller) pushMetrics(metricsValues *metrics.MetricsValues) {
