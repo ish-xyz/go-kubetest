@@ -51,7 +51,7 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 			c.waitForResources(test)
 		}
 		logrus.Debug("Push new metrics to server")
-		c.pushMetrics(metricsValues)
+		c.serveMetrics(metricsValues)
 
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
@@ -120,7 +120,7 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.Tes
 	return metricsValues
 }
 
-func (c *Controller) pushMetrics(metricsValues *metrics.MetricsValues) {
+func (c *Controller) serveMetrics(metricsValues *metrics.MetricsValues) {
 
 	rMetrics := c.MetricsServer.Metrics
 
