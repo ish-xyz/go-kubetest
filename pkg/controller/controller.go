@@ -35,20 +35,20 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 			logrus.Infof("Running test: '%s'", test.Name)
 
 			// Create resources and wait for creation
-			errors := c.setup(test.ObjectsList)
+			creationErrors := c.setup(test.ObjectsList)
 
 			// Wait for resources to be provisioned
-			c.waitForResources(test)
+			c.waitForResources()
 
 			// Run the actual tests
-			result := c.Assert.Run(test, errors)
+			result := c.Assert.Run(test, creationErrors)
 			metricsValues = updateMetricsValues(metricsValues, result)
 
 			// Delete resources and wait for deletion
 			c.teardown(test.ObjectsList)
 
 			// Wait for resources to be deleted
-			c.waitForResources(test)
+			c.waitForResources()
 		}
 		logrus.Debug("Push new metrics to server")
 		c.serveMetrics(metricsValues)
@@ -59,13 +59,9 @@ func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) 
 
 }
 
-func (c *Controller) waitForResources(test loader.TestDefinition) {
-	timeout, err := time.ParseDuration(test.MaxWait) // TODO: change from "sleep for $MaxWait" to retry with timeout $MaxWait
-	if err != nil {
-		logrus.Warnf("Couldn't parse test timeout, defaulting to %s", defaultMaxWait)
-		timeout, _ = time.ParseDuration(defaultMaxWait)
-	}
-	time.Sleep(timeout)
+func (c *Controller) waitForResources() {
+	wait, _ := time.ParseDuration("20s")
+	time.Sleep(wait)
 }
 
 // Create resources defined on manifests

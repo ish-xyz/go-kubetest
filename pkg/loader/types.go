@@ -26,11 +26,15 @@ type Assertion struct {
 }
 
 type TestDefinition struct {
-	Name           string   `yaml:"name"`
-	Manifest       string   `yaml:"manifest"`
-	ExpectedErrors []string `yaml:"expectedErrors"`
-	MaxWait        string   `yaml:"maxWait"`
-	ObjectsList    []LoadedObject
-	Assert         []Assertion `yaml:"assert"`
-	Status         string      // TODO DeleteError, CreateError, Fail, Success
+	Name     string `yaml:"name"`
+	Manifest string `yaml:"manifest"`
+	Setup    struct {
+		ExpectedErrors []string `yaml:"expectedErrors`
+		WaitFor        []struct {
+			Resource string `yaml:"resource"`
+			Timeout  string `yaml:"timeout"`
+		}
+	}
+	ObjectsList []LoadedObject
+	Assert      []Assertion `yaml:"assert"`
 }

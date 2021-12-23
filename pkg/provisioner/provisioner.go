@@ -40,13 +40,24 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedOb
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
-	object, err := getMapperWithObject(object, p.Config)
+
+	// Init discovery client and mapper
+	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
+	if err != nil {
+		return loader.LoadedObject{}, err
+	}
+
+	// Get GVR
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	mapping, err := mapper.RESTMapping(
+		obj.GroupVersionKind().GroupKind(),
+		obj.GroupVersionKind().Version,
+	)
 	if err != nil {
 		return loader.LoadedObject{}, err
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
-	mapping := object.Mapping
 	dr = p.DynClient.Resource(mapping.Resource)
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 		dr = p.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
@@ -66,13 +77,24 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
-	object, err := getMapperWithObject(object, p.Config)
+
+	// Init discovery client and mapper
+	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
+	if err != nil {
+		return loader.LoadedObject{}, err
+	}
+
+	// Get GVR
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+	mapping, err := mapper.RESTMapping(
+		obj.GroupVersionKind().GroupKind(),
+		obj.GroupVersionKind().Version,
+	)
 	if err != nil {
 		return loader.LoadedObject{}, err
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
-	mapping := object.Mapping
 	dr = p.DynClient.Resource(mapping.Resource)
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
 		dr = p.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
@@ -106,8 +128,9 @@ func (p *Provisioner) ListWithSelectors(
 		logrus.Debugln(err)
 		return nil, err
 	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
+
 	// Get GVR
+	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
 	mapping, err := mapper.RESTMapping(
 		schema.ParseGroupKind(kind),
 		apiVersion,
@@ -117,6 +140,7 @@ func (p *Provisioner) ListWithSelectors(
 		return nil, err
 	}
 
+	// Init dynamic client
 	dr = p.DynClient.Resource(mapping.Resource)
 	if namespace != "" {
 		dr = p.DynClient.Resource(mapping.Resource).Namespace(namespace)
@@ -149,33 +173,3 @@ func (p *Provisioner) ListWithSelectors(
 
 	return retrievedObjects, nil
 }
-
-// Create Mapper and return a copy of object with the Mapper set
-func getMapperWithObject(object loader.LoadedObject, cfg *rest.Config) (loader.LoadedObject, error) {
-
-	obj := object.Object
-
-	// Init discovery client and mapper
-	dc, err := discovery.NewDiscoveryClientForConfig(cfg)
-	if err != nil {
-		return loader.LoadedObject{}, err
-	}
-	mapper := restmapper.NewDeferredDiscoveryRESTMapper(memory.NewMemCacheClient(dc))
-
-	// Get GVR
-	mapping, err := mapper.RESTMapping(
-		obj.GroupVersionKind().GroupKind(),
-		obj.GroupVersionKind().Version,
-	)
-
-	if err != nil {
-		return loader.LoadedObject{}, err
-	}
-
-	// Add Mapping to the copy of the object
-	object.Mapping = mapping
-
-	return object, nil
-}
-
-// TODO Watch for resources till timeout

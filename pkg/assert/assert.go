@@ -26,7 +26,7 @@ func (a *Assert) Run(test loader.TestDefinition, errors []string) TestResult {
 
 	testResult.AssertionsResults = append(
 		testResult.AssertionsResults,
-		testResult.expectedErrors(test.ExpectedErrors, errors)...,
+		testResult.expectedErrors(test.Setup.ExpectedErrors, errors)...,
 	)
 	testResult.AssertionsResults = append(
 		testResult.AssertionsResults,
