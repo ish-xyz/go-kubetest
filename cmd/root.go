@@ -62,7 +62,7 @@ func exec(cmd *cobra.Command, args []string) {
 		logrus.Fatal(cmd.Help())
 	}
 
-	testsObjects, _ := ldr.LoadTestSuites(testsdir)
+	testsObjects, _ := ldr.LoadTests(testsdir)
 
 	provisionerInstance := provisioner.NewProvisioner(restConfig)
 	assertInstance := assert.NewAssert(provisionerInstance)

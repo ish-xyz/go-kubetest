@@ -42,7 +42,11 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 			// Run the actual tests
 			result := c.Assert.Run(test, creationErrors)
-			metricsValues = updateMetricsValues(metricsValues, result)
+			metricsValues = updateMetricsValues(
+				metricsValues,
+				test.Name,
+				result,
+			)
 
 			// Delete resources and wait for deletion
 			c.teardown(test.ObjectsList)
@@ -97,16 +101,18 @@ func (c *Controller) teardown(objects []*loader.LoadedObject) {
 	}
 }
 
-func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.TestResult) *metrics.MetricsValues {
-	metricsValues.TotalTests += 1
+// Update a temporary struct that will then used to push metrics in one go
+func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, result bool) *metrics.MetricsValues {
 
-	if result.Passed {
+	if result {
 		metricsValues.TotalTestsPassed += 1
-		metricsValues.TestStatus[result.Name] = 1
+		metricsValues.TestStatus[testName] = 1
 	} else {
 		metricsValues.TotalTestsFailed += 1
-		metricsValues.TestStatus[result.Name] = 0
+		metricsValues.TestStatus[testName] = 0
 	}
+
+	metricsValues.TotalTests += 1
 
 	return metricsValues
 }
@@ -122,5 +128,4 @@ func (c *Controller) serveMetrics(metricsValues *metrics.MetricsValues) {
 	rMetrics.TotalTestsFailed.Set(metricsValues.TotalTestsFailed)
 	rMetrics.TotalTestsPassed.Set(metricsValues.TotalTestsPassed)
 	rMetrics.TotalTests.Set(metricsValues.TotalTests)
-
 }

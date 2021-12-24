@@ -1,15 +1,21 @@
 - name: namespace_creation
   manifest: ./manifests/test-1.yaml
   setup:
-    expectedErrors: []
     waitFor:
     - resource: v1/Namespace/namespace-1
       timeout: 20s
   assert:
-  - apiVersion: v1
+  - type: expectedErrors
+    errors: []
+  - type: expectedResources
+    apiVersion: v1
     kind: Namespace
+    count: 1
     selectors:
       metadata.name: namespace-1
       status.phase: Active
       metadata.labels.myCustomLabel: myCustomValue
-    expectedResources: 1
+  teardown:
+    waitFor:
+    - resource: v1/Namespace/namespace-1
+      timeout: 20s
