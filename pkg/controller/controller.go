@@ -22,7 +22,7 @@ func NewController(prv *provisioner.Provisioner, ms *metrics.Server, a *assert.A
 	}
 }
 
-func (c *Controller) Run(testsList []loader.TestDefinition, wait time.Duration) {
+func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration) {
 
 	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
 	go c.MetricsServer.Serve()
@@ -65,12 +65,12 @@ func (c *Controller) waitForResources() {
 }
 
 // Create resources defined on manifests
-func (c *Controller) setup(objects []loader.LoadedObject) []string {
+func (c *Controller) setup(objects []*loader.LoadedObject) []string {
 
 	var errors []string
 
 	for _, obj := range objects {
-		_, err := c.Provisioner.CreateOrUpdate(context.TODO(), obj)
+		err := c.Provisioner.CreateOrUpdate(context.TODO(), obj)
 		if err != nil {
 			logrus.Debugf("Couldn't delete resource %s", obj.Object.GetName())
 			logrus.Debugln(err)
@@ -84,10 +84,10 @@ func (c *Controller) setup(objects []loader.LoadedObject) []string {
 }
 
 // Delete resources defined on manifests
-func (c *Controller) teardown(objects []loader.LoadedObject) {
+func (c *Controller) teardown(objects []*loader.LoadedObject) {
 
 	for _, obj := range objects {
-		_, err := c.Provisioner.Delete(context.TODO(), obj)
+		err := c.Provisioner.Delete(context.TODO(), obj)
 		if err != nil {
 			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.Object.GetName())
 			logrus.Errorln(err)
@@ -99,11 +99,6 @@ func (c *Controller) teardown(objects []loader.LoadedObject) {
 
 func updateMetricsValues(metricsValues *metrics.MetricsValues, result assert.TestResult) *metrics.MetricsValues {
 	metricsValues.TotalTests += 1
-
-	// TODO this is ugly: init map if nil (only for first execution)
-	if metricsValues.TestStatus == nil {
-		metricsValues.TestStatus = map[string]float64{}
-	}
 
 	if result.Passed {
 		metricsValues.TotalTestsPassed += 1

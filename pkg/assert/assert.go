@@ -16,7 +16,7 @@ func NewAssert(prv *provisioner.Provisioner) *Assert {
 	}
 }
 
-func (a *Assert) Run(test loader.TestDefinition, errors []string) TestResult {
+func (a *Assert) Run(test *loader.TestDefinition, errors []string) TestResult {
 
 	testResult := &TestResult{
 		Name:              test.Name,
@@ -92,7 +92,7 @@ func (t *TestResult) expectedErrors(expErrors, actErrors []string) []AssertionRe
 }
 
 // Check if the retrieved objects match the expected count
-func (t *TestResult) expectedObjects(prv *provisioner.Provisioner, test loader.TestDefinition) []AssertionResult {
+func (t *TestResult) expectedObjects(prv *provisioner.Provisioner, test *loader.TestDefinition) []AssertionResult {
 
 	var result []AssertionResult
 

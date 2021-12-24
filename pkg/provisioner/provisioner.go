@@ -36,7 +36,7 @@ func NewProvisioner(cfg *rest.Config) *Provisioner {
 }
 
 // Create or update an unstructured resource
-func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedObject) (loader.LoadedObject, error) {
+func (p *Provisioner) CreateOrUpdate(ctx context.Context, object *loader.LoadedObject) error {
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
@@ -44,7 +44,7 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedOb
 	// Init discovery client and mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
 	if err != nil {
-		return loader.LoadedObject{}, err
+		return err
 	}
 
 	// Get GVR
@@ -54,7 +54,7 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedOb
 		obj.GroupVersionKind().Version,
 	)
 	if err != nil {
-		return loader.LoadedObject{}, err
+		return err
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
@@ -69,11 +69,11 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object loader.LoadedOb
 		FieldManager: "go-kubetest",
 	})
 
-	return object, err
+	return err
 }
 
 // Delete an unstructured resource
-func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (loader.LoadedObject, error) {
+func (p *Provisioner) Delete(ctx context.Context, object *loader.LoadedObject) error {
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
@@ -81,7 +81,7 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 	// Init discovery client and mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
 	if err != nil {
-		return loader.LoadedObject{}, err
+		return err
 	}
 
 	// Get GVR
@@ -91,7 +91,7 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 		obj.GroupVersionKind().Version,
 	)
 	if err != nil {
-		return loader.LoadedObject{}, err
+		return err
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
@@ -107,7 +107,7 @@ func (p *Provisioner) Delete(ctx context.Context, object loader.LoadedObject) (l
 	}
 	err = dr.Delete(ctx, obj.GetName(), deleteOptions)
 
-	return object, err
+	return err
 }
 
 // List Resources dynamically in a Kubernetes cluster using fieldselectors

@@ -1,4 +1,6 @@
 - Wait for resources (creation and deletion)
+- Expected errors as part of assert
+- Pointers from loader
 - Remote trigger or a "kubectl start tests" command (something like that)
 - Create more test examples
 - Complete README.md

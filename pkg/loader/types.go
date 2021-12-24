@@ -35,6 +35,12 @@ type TestDefinition struct {
 			Timeout  string `yaml:"timeout"`
 		}
 	}
-	ObjectsList []LoadedObject
-	Assert      []Assertion `yaml:"assert"`
+	ObjectsList []*LoadedObject
+	Assert      []struct {
+		ApiVersion        string                 `yaml:"apiVersion"`
+		Kind              string                 `yaml:"kind"`
+		Namespace         string                 `yaml:"namespace"`
+		Selectors         map[string]interface{} `yaml:"selectors"`
+		ExpectedResources int                    `yaml:"expectedResources"`
+	}
 }

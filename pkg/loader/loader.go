@@ -21,9 +21,9 @@ func NewLoader() *Loader {
 
 // Takes in the filepath to a YAML file and returns an unstructured object
 // TODO: load yaml file with multiple resources
-func (ldr *Loader) LoadManifests(filepath string) ([]LoadedObject, error) {
+func (ldr *Loader) LoadManifests(filepath string) ([]*LoadedObject, error) {
 
-	var objects []LoadedObject
+	var objects []*LoadedObject
 
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	data, err := ioutil.ReadFile(filepath)
@@ -33,7 +33,7 @@ func (ldr *Loader) LoadManifests(filepath string) ([]LoadedObject, error) {
 
 	manifests := strings.Split(string(data), YAMLDelimiter)
 	for _, manifest := range manifests {
-		object := LoadedObject{}
+		object := &LoadedObject{}
 		unstructObject := &unstructured.Unstructured{}
 		_, _, err = decUnstructured.Decode([]byte(manifest), nil, unstructObject)
 		if err != nil {
@@ -48,21 +48,21 @@ func (ldr *Loader) LoadManifests(filepath string) ([]LoadedObject, error) {
 }
 
 // Load multiple testSuite files and related Manifests/Objects
-func (ldr *Loader) LoadTestSuites(testsDir string) ([]TestDefinition, error) {
+func (ldr *Loader) LoadTestSuites(testsDir string) ([]*TestDefinition, error) {
 
-	var testSuite []TestDefinition
+	var testSuite []*TestDefinition
 
 	match := testsDir + "/*yaml"
 	logrus.Debugf("searching for yaml files in %s", match)
 	files, err := filepath.Glob(match)
 	if err != nil {
-		return []TestDefinition{}, err
+		return nil, err
 	}
 	logrus.Infof("files found: %v", files)
 
 	for _, file := range files {
 
-		test := []TestDefinition{}
+		test := []*TestDefinition{}
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
 			logrus.Errorf("Failed to load test file %s", file)
@@ -89,7 +89,7 @@ func (ldr *Loader) LoadTestSuites(testsDir string) ([]TestDefinition, error) {
 		testSuite = append(testSuite, test...)
 	}
 
-	logrus.Debugf("Loaded tests: %v", testSuite)
+	logrus.Debugln("Loaded tests: ", testSuite)
 
 	return testSuite, nil
 }
