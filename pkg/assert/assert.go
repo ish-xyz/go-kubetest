@@ -36,6 +36,7 @@ func (a *Assert) Run(test *loader.TestDefinition, errors []string) bool {
 	return testResult
 }
 
+// Check if the errors throwed during setup are expected or not
 func expectedErrors(expErrors, actErrors []string) bool {
 
 	if len(expErrors) != len(actErrors) {

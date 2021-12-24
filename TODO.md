@@ -1,6 +1,4 @@
 - Metrics on whatever the controller is running or not
-- A Metric for each assertion?
-- Wait for resources (creation and deletion)
 - Remote trigger or a "kubectl start tests" command (something like that)
 - Create more test examples
 - Complete README.md

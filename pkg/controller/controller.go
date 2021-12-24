@@ -140,7 +140,15 @@ func (c *Controller) setup(objects []*loader.LoadedObject) []string {
 // Delete resources defined on manifests
 func (c *Controller) teardown(objects []*loader.LoadedObject) {
 
-	for _, obj := range objects {
+	// Need to revert the list to process the incoming objects from the last one to the first one
+	// This can be in one loop but I didn't have the time
+	reversedObjectsList := make([]*loader.LoadedObject, int(len(objects)-1))
+	for index, obj := range objects {
+		newIndex := (len(objects) - 1) - index
+		reversedObjectsList[newIndex] = obj
+	}
+
+	for _, obj := range reversedObjectsList {
 		err := c.Provisioner.Delete(context.TODO(), obj)
 		if err != nil {
 			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.Object.GetName())
