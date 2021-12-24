@@ -18,20 +18,19 @@ type TestDefinition struct {
 	ObjectsList []*LoadedObject
 
 	Setup struct {
-		WaitFor []struct {
-			Resource string `yaml:"resource"`
-			Timeout  string `yaml:"timeout"`
-		} `yaml:"waitFor"`
+		WaitFor []WaitFor `yaml:"waitFor"`
 	} `yaml:"setup"`
 
 	Teardown struct {
-		WaitFor []struct {
-			Resource string `yaml:"resource"`
-			Timeout  string `yaml:"timeout"`
-		} `yaml:"waitFor"`
+		WaitFor []WaitFor `yaml:"waitFor"`
 	} `yaml:"teardown"`
 
 	Assert []Assertion `yaml:"assert"`
+}
+
+type WaitFor struct {
+	Resource string `yaml:"resource"`
+	Timeout  string `yaml:"timeout"`
 }
 
 type LoadedObject struct {

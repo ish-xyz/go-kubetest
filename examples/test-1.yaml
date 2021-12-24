@@ -3,7 +3,7 @@
   setup:
     waitFor:
     - resource: v1/Namespace/namespace-1
-      timeout: 20s
+      timeout: 120s
   assert:
   - type: expectedErrors
     errors: []
@@ -18,4 +18,4 @@
   teardown:
     waitFor:
     - resource: v1/Namespace/namespace-1
-      timeout: 20s
+      timeout: 120xxx
