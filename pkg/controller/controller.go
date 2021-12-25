@@ -15,7 +15,7 @@ import (
 
 const defaultMaxWait = "60s"
 
-func NewController(prv *provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
+func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
 	return &Controller{
 		Provisioner:   prv,
 		MetricsServer: ms,
@@ -36,10 +36,10 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			logrus.Infof("Running test: '%s'", test.Name)
 
 			// Create resources and wait for creation
-			errors := c.setup(test.ObjectsList)
+			errors := c.Setup(test.ObjectsList)
 
 			// Wait for resources to be provisioned
-			c.waitForResources(test.Setup.WaitFor)
+			c.WaitFor(test.Setup.WaitFor)
 
 			// Run the actual tests
 			result := c.Assert.Run(test, errors)
@@ -50,10 +50,10 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			)
 
 			// Delete resources and wait for deletion
-			c.teardown(test.ObjectsList)
+			c.Teardown(test.ObjectsList)
 
 			// Wait for resources to be deleted
-			c.waitForResources(test.Teardown.WaitFor)
+			c.WaitFor(test.Teardown.WaitFor)
 		}
 
 		logrus.Debug("Push new metrics to server")
@@ -65,7 +65,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 }
 
-func (c *Controller) waitForResources(resources []loader.WaitFor) {
+func (c *Controller) WaitFor(resources []loader.WaitFor) {
 
 	for _, resource := range resources {
 
@@ -120,7 +120,7 @@ func (c *Controller) waitForResources(resources []loader.WaitFor) {
 }
 
 // Create resources defined on manifests
-func (c *Controller) setup(objects []*loader.LoadedObject) []string {
+func (c *Controller) Setup(objects []*loader.LoadedObject) []string {
 
 	var errors []string
 
@@ -139,7 +139,7 @@ func (c *Controller) setup(objects []*loader.LoadedObject) []string {
 }
 
 // Delete resources defined on manifests
-func (c *Controller) teardown(objects []*loader.LoadedObject) {
+func (c *Controller) Teardown(objects []*loader.LoadedObject) {
 
 	for index := range objects {
 		// Teardown needs to delete the objects in the
@@ -174,6 +174,7 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, 
 	return metricsValues
 }
 
+// Set actual metrics values for promtheus package to export them
 func (c *Controller) setMetrics(metricsValues *metrics.MetricsValues) {
 
 	rMetrics := c.MetricsServer.Metrics

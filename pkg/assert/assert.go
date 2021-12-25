@@ -8,7 +8,7 @@ import (
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 )
 
-func NewAssert(prv *provisioner.Provisioner) *Assert {
+func NewAssert(prv provisioner.Provisioner) *Assert {
 	return &Assert{
 		Provisioner: prv,
 	}
@@ -53,7 +53,7 @@ func expectedErrors(expErrors, actErrors []string) bool {
 }
 
 // Check if the retrieved objects match the expected count
-func expectedResources(prv *provisioner.Provisioner, assertion loader.Assertion) bool {
+func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) bool {
 
 	objects, err := prv.ListWithSelectors(
 		context.TODO(),

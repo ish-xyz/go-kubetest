@@ -5,5 +5,5 @@ import (
 )
 
 type Assert struct {
-	Provisioner *provisioner.Provisioner
+	Provisioner provisioner.Provisioner
 }

@@ -23,12 +23,12 @@ import (
 
 // Return a provisioner instance used to create, update & delete
 // 		cluster-wide or namespaced resources on Kubernetes cluster
-func NewProvisioner(cfg *rest.Config) *Provisioner {
+func NewProvisioner(cfg *rest.Config) *Kubernetes {
 
 	dynclient, _ := dynamic.NewForConfig(cfg)
 	client, _ := kubernetes.NewForConfig(cfg)
 
-	return &Provisioner{
+	return &Kubernetes{
 		Config:    cfg,
 		Client:    client,
 		DynClient: dynclient,
@@ -36,13 +36,13 @@ func NewProvisioner(cfg *rest.Config) *Provisioner {
 }
 
 // Create or update an unstructured resource
-func (p *Provisioner) CreateOrUpdate(ctx context.Context, object *loader.LoadedObject) error {
+func (k *Kubernetes) CreateOrUpdate(ctx context.Context, object *loader.LoadedObject) error {
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
 
 	// Init discovery client and mapper
-	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
+	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)
 	if err != nil {
 		return err
 	}
@@ -58,9 +58,9 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object *loader.LoadedO
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
-	dr = p.DynClient.Resource(mapping.Resource)
+	dr = k.DynClient.Resource(mapping.Resource)
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		dr = p.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
+		dr = k.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
 	}
 
 	// Exec rest request to API
@@ -73,13 +73,13 @@ func (p *Provisioner) CreateOrUpdate(ctx context.Context, object *loader.LoadedO
 }
 
 // Delete an unstructured resource
-func (p *Provisioner) Delete(ctx context.Context, object *loader.LoadedObject) error {
+func (k *Kubernetes) Delete(ctx context.Context, object *loader.LoadedObject) error {
 
 	var dr dynamic.ResourceInterface
 	obj := object.Object
 
 	// Init discovery client and mapper
-	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
+	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)
 	if err != nil {
 		return err
 	}
@@ -95,9 +95,9 @@ func (p *Provisioner) Delete(ctx context.Context, object *loader.LoadedObject) e
 	}
 
 	// Get Rest Interface (Cluster or Namespaced resource)
-	dr = p.DynClient.Resource(mapping.Resource)
+	dr = k.DynClient.Resource(mapping.Resource)
 	if mapping.Scope.Name() == meta.RESTScopeNameNamespace {
-		dr = p.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
+		dr = k.DynClient.Resource(mapping.Resource).Namespace(obj.GetNamespace())
 	}
 
 	// Exec rest request to API
@@ -111,7 +111,7 @@ func (p *Provisioner) Delete(ctx context.Context, object *loader.LoadedObject) e
 }
 
 // List Resources dynamically in a Kubernetes cluster using fieldselectors
-func (p *Provisioner) ListWithSelectors(
+func (k *Kubernetes) ListWithSelectors(
 	ctx context.Context,
 	apiVersion string,
 	kind string,
@@ -123,7 +123,7 @@ func (p *Provisioner) ListWithSelectors(
 	var dr dynamic.ResourceInterface
 
 	// Init discovery client and mapper
-	dc, err := discovery.NewDiscoveryClientForConfig(p.Config)
+	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)
 	if err != nil {
 		logrus.Debugln(err)
 		return nil, err
@@ -141,9 +141,9 @@ func (p *Provisioner) ListWithSelectors(
 	}
 
 	// Init dynamic client
-	dr = p.DynClient.Resource(mapping.Resource)
+	dr = k.DynClient.Resource(mapping.Resource)
 	if namespace != "" {
-		dr = p.DynClient.Resource(mapping.Resource).Namespace(namespace)
+		dr = k.DynClient.Resource(mapping.Resource).Namespace(namespace)
 	}
 
 	// Composing selectors

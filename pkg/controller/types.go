@@ -7,7 +7,7 @@ import (
 )
 
 type Controller struct {
-	Provisioner   *provisioner.Provisioner
+	Provisioner   provisioner.Provisioner
 	MetricsServer *metrics.Server
 	Assert        *assert.Assert
 }
