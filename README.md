@@ -1,5 +1,5 @@
 
-![go-kubetest logo](/assets/images/logo.jpeg)
+![go-kubetest logo](/assets/images/logo.png)
 
 # go-kubetest: Kubernetes integration tests
 
