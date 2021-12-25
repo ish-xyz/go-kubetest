@@ -34,13 +34,15 @@ In the above example the controller will try to create the resources within `./m
 
 At the moment the controller uses only 2 assertions.
 
-The first one, "expectedResources", will try to retrieve one or more Kubernetes resources with the specified selectors (fieldSelectors and labelSelectors). Right after, will compare the number taken from the field `count` (expected number of resources) with the number of actual objects retrieved from the cluster, if it doesn't match the assertion has failed.
+The first one, "expectedResources", will try to retrieve one or more Kubernetes resources with the specified selectors (fieldSelectors and labelSelectors).<br/>
+Right after, will compare the number taken from the field `count` (expected number of resources) with the number of actual objects retrieved from the cluster, if it doesn't match the assertion has failed.<br/>
 
 The second assertion, "expectedErrors", will count the errors during the creation of the resources and match the number of error and the regex defined in the test definition with the errors found during the setup. An empty array is considered as 0 errors expected.
 
 ## Metrics
 
-Kubetest run as a controller and exposes 4 simple metrics about the integration tests statuses.
+Kubetest run as a controller and exposes 4 simple metrics about the integration tests statuses.<br/>
+
 
 | Metric Name                   | Type  | Description |
 | :---                          | :---  | :---  |
@@ -50,17 +52,17 @@ Kubetest run as a controller and exposes 4 simple metrics about the integration 
 | kubetest_total_tests_failed   | Gauge | The total number of **failed** tests that the controller ran in the last execution        |
 
 
-For some other practical examples see the `examples` folder.
+For some other practical examples see the `examples` folder.<br/>
 
 ## Step by step tutorial
 
-1. Run the following commands:
+1. Run the following commands:<br/>
 ```
 mkdir -p testsdir/manifests
 touch testsdir/test-1.yaml
 ```
 
-2. Edit the file `testsdir/test-1.yaml` with:
+2. Edit the file `testsdir/test-1.yaml` with:<br/>
 ```
 - name: namespace_creation
   manifest: ./manifests/test-1.yaml
@@ -85,7 +87,7 @@ touch testsdir/test-1.yaml
       timeout: 10s
 ```
 
-3. Download go-kubetest and test it locally against your Kubernetes cluster:
+3. Download go-kubetest and test it locally against your Kubernetes cluster:<br/>
 
 ```
 ./go-kubetest --kubeconfig ~/.kube/config --testsdir examples --interval 60 --debug
