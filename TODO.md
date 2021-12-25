@@ -1,4 +1,3 @@
-- Metrics on whatever the controller is running or not
 - Remote trigger or a "kubectl start tests" command (something like that)
 - Create more test examples
 - Complete README.md

@@ -55,8 +55,9 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			// Wait for resources to be deleted
 			c.waitForResources(test.Teardown.WaitFor)
 		}
+
 		logrus.Debug("Push new metrics to server")
-		c.serveMetrics(metricsValues)
+		c.setMetrics(metricsValues)
 
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
@@ -157,20 +158,23 @@ func (c *Controller) teardown(objects []*loader.LoadedObject) {
 // Update a temporary struct that will then used to push metrics in one go
 func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, result bool) *metrics.MetricsValues {
 
-	if result {
-		metricsValues.TotalTestsPassed += 1
-		metricsValues.TestStatus[testName] = 1
-	} else {
-		metricsValues.TotalTestsFailed += 1
-		metricsValues.TestStatus[testName] = 0
+	set := func(result bool) float64 {
+		if result {
+			return 1
+		} else {
+			return 0
+		}
 	}
 
+	metricsValues.TotalTestsFailed += set(!result)
+	metricsValues.TotalTestsPassed += set(result)
+	metricsValues.TestStatus[testName] += set(result)
 	metricsValues.TotalTests += 1
 
 	return metricsValues
 }
 
-func (c *Controller) serveMetrics(metricsValues *metrics.MetricsValues) {
+func (c *Controller) setMetrics(metricsValues *metrics.MetricsValues) {
 
 	rMetrics := c.MetricsServer.Metrics
 
