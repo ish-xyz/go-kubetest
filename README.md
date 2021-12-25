@@ -1,4 +1,7 @@
-# KUBETEST: Kubernetes integration tests
+
+![go-kubetest logo](/assets/images/logo.jpeg)
+
+# go-kubetest: Kubernetes integration tests
 
 A tool to run integrations tests on kubernetes, by defining simple YAML files.
 
