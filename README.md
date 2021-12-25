@@ -2,7 +2,7 @@
 
 ![go-kubetest logo](/assets/images/logo.png)
 
-A tool to run integrations tests on kubernetes, by defining simple YAML files.
+A tool to run integrations tests on kubernetes, by defining simple YAML files.<br>
 Kubetest runs in cluster as a controller, executes integration tests periodically and exposes Prometheus metrics about itself and the tests results.
 <br>
 <br>
