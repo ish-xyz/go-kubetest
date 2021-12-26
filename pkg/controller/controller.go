@@ -39,7 +39,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			errors := c.Setup(test.ObjectsList)
 
 			// Wait for resources to be provisioned
-			c.WaitFor(test.Setup.WaitFor)
+			c.WaitFor("create", test.Setup.WaitFor)
 
 			// Run the actual tests
 			result := c.Assert.Run(test, errors)
@@ -53,7 +53,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			c.Teardown(test.ObjectsList)
 
 			// Wait for resources to be deleted
-			c.WaitFor(test.Teardown.WaitFor)
+			c.WaitFor("delete", test.Teardown.WaitFor)
 		}
 
 		logrus.Debug("Push new metrics to server")
@@ -65,7 +65,8 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 }
 
-func (c *Controller) WaitFor(resources []loader.WaitFor) {
+// Wait for a particular resource to be either deleted or created
+func (c *Controller) WaitFor(ops string, resources []loader.WaitFor) {
 
 	for _, resource := range resources {
 
@@ -108,11 +109,21 @@ func (c *Controller) WaitFor(resources []loader.WaitFor) {
 					"metadata.name": name,
 				},
 			)
-			if obj != nil {
-				logrus.Debugf("Success object retrieved: %s", resource.Resource)
-				break
-			} else {
-				logrus.Warningf("Can't retrieve object, retrying in 5s. Object: %s", resource.Resource)
+
+			if ops == "create" {
+				if len(obj.Items) != 0 {
+					logrus.Debugf("Success object retrieved: %s", resource.Resource)
+					break
+				}
+				logrus.Debugf("Can't retrieve object, retrying in 5s. Object: %s", resource.Resource)
+			}
+
+			if ops == "delete" {
+				if len(obj.Items) == 0 {
+					logrus.Debugf("Object deleted: %s", resource.Resource)
+					break
+				}
+				logrus.Warningf("Object %s still exists, retrying in 5s. Object", resource.Resource)
 			}
 			time.Sleep(5 * time.Second)
 		}

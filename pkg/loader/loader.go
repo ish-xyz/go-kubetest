@@ -52,14 +52,14 @@ func (ldr *Loader) LoadTests(testsDir string) ([]*TestDefinition, error) {
 
 	var tests []*TestDefinition
 
-	match := testsDir + "/*yaml"
-	logrus.Debugf("searching for yaml files in %s", match)
+	logrus.Debugf("searching for yaml files in %s", testsDir)
+	match := testsDir + "/*.yaml"
 	files, err := filepath.Glob(match)
 	if err != nil {
 		return nil, err
 	}
-	logrus.Infof("files found: %v", files)
 
+	logrus.Infof("files found: %v", files)
 	for _, file := range files {
 
 		test := make([]*TestDefinition, 10)
