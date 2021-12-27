@@ -10,6 +10,7 @@ import (
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
 
@@ -36,38 +37,42 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&testsdir, "testsdir", "", "The directory with tests definitions")
-	rootCmd.MarkPersistentFlagRequired("testsdir")
-
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
 	rootCmd.PersistentFlags().BoolVar(&once, "once", false, "Run the tests one time only")
+
+	rootCmd.MarkPersistentFlagRequired("testsdir")
 }
 
 func exec(cmd *cobra.Command, args []string) {
+
+	var restConfig *rest.Config
+	var err error
+
+	if kubeconfig == "" {
+		restConfig, err = rest.InClusterConfig()
+	} else {
+		restConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
+	}
+	if err != nil {
+		logrus.Fatal(err)
+	}
 
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
 
-	// TODO: if kubeconfig not provided try in-cluster configuration
-	_, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		logrus.Fatal(err)
-	}
-
 	ldr := loader.NewLoader()
-	restConfig, err := clientcmd.BuildConfigFromFlags("", kubeconfig)
-	if err != nil {
-		logrus.Fatal(cmd.Help())
-	}
-
 	testsObjects, _ := ldr.LoadTests(testsdir)
-
 	provisionerInstance := provisioner.NewProvisioner(restConfig)
 	assertInstance := assert.NewAssert(provisionerInstance)
 	metricsInstance := metrics.NewServer()
 	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
 
+	if once {
+		controllerInstance.RunOnce(testsObjects)
+		return
+	}
 	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
 }

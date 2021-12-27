@@ -1,4 +1,3 @@
-- Adjust CLI to run as controller in a Kubernetes cluster
 - Prepare Dockerfile
 - YAMLs validation (https://github.com/dealancer/validate)
 - Add unit tests

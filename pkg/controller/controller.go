@@ -24,6 +24,27 @@ func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.As
 	}
 }
 
+// Run tests one time only
+func (c *Controller) RunOnce(testsList []*loader.TestDefinition) {
+
+	for _, test := range testsList {
+		logrus.Infof("Running test: '%s'", test.Name)
+
+		// Create resources and wait for creation
+		errors := c.Setup(test.ObjectsList)
+		c.WaitForCreation(test.Setup.WaitFor)
+
+		// Run the actual tests
+		c.Assert.Run(test, errors)
+
+		// Delete resources and wait for deletion
+		c.Teardown(test.ObjectsList)
+		c.WaitForDeletion(test.Teardown.WaitFor)
+	}
+	logrus.Infof("Tests execution completed.")
+}
+
+// Start controller for periodically tests executions
 func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration) {
 
 	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
@@ -31,33 +52,22 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 	logrus.Info("Starting controller")
 	for {
-
 		metricsValues := metrics.NewMetricsValues()
-
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
 
 			// Create resources and wait for creation
 			errors := c.Setup(test.ObjectsList)
-
-			// Wait for resources to be provisioned
 			c.WaitForCreation(test.Setup.WaitFor)
 
 			// Run the actual tests
 			result := c.Assert.Run(test, errors)
-			metricsValues = updateMetricsValues(
-				metricsValues,
-				test.Name,
-				result,
-			)
+			metricsValues = updateMetricsValues(metricsValues, test.Name, result)
 
 			// Delete resources and wait for deletion
 			c.Teardown(test.ObjectsList)
-
-			// Wait for resources to be deleted
 			c.WaitForDeletion(test.Teardown.WaitFor)
 		}
-
 		logrus.Debug("Push new metrics to server")
 		c.setMetrics(metricsValues)
 
@@ -70,21 +80,21 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 // WaitForCreation wait until a set of resources has been created
 func (c *Controller) WaitForCreation(resources []loader.WaitFor) {
 
-	createCondition := func(List []unstructured.Unstructured) bool {
-		return len(List) != 0
+	condition := func(list []unstructured.Unstructured) bool {
+		return len(list) != 0
 	}
 
-	waitFor(c.Provisioner, resources, createCondition)
+	waitFor(c.Provisioner, resources, condition)
 }
 
 // WaitForDeletion wait until a set of resources has been deleted
 func (c *Controller) WaitForDeletion(resources []loader.WaitFor) {
 
-	delCondition := func(List []unstructured.Unstructured) bool {
-		return len(List) == 0
+	condition := func(list []unstructured.Unstructured) bool {
+		return len(list) == 0
 	}
 
-	waitFor(c.Provisioner, resources, delCondition)
+	waitFor(c.Provisioner, resources, condition)
 }
 
 // Create resources defined on manifests
@@ -189,7 +199,7 @@ func getMaxRetries(waitTime string) int {
 func waitFor(
 	prv provisioner.Provisioner,
 	resources []loader.WaitFor,
-	checkFunc func(List []unstructured.Unstructured) bool) {
+	checkFunc func(list []unstructured.Unstructured) bool) {
 
 	for _, resource := range resources {
 
