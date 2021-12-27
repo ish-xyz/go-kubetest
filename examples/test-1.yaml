@@ -18,4 +18,4 @@
   teardown:
     waitFor:
     - resource: v1/Namespace/namespace-1
-      timeout: 120xxx #this will be defaulted to 60s
+      timeout: 120s

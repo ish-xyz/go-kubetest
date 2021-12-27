@@ -11,6 +11,7 @@ import (
 	"github.com/ish-xyz/go-kubetest/pkg/metrics"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const defaultMaxWait = "60s"
@@ -32,6 +33,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 	for {
 
 		metricsValues := metrics.NewMetricsValues()
+
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
 
@@ -39,7 +41,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			errors := c.Setup(test.ObjectsList)
 
 			// Wait for resources to be provisioned
-			c.WaitFor("create", test.Setup.WaitFor)
+			c.WaitForCreation(test.Setup.WaitFor)
 
 			// Run the actual tests
 			result := c.Assert.Run(test, errors)
@@ -53,7 +55,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			c.Teardown(test.ObjectsList)
 
 			// Wait for resources to be deleted
-			c.WaitFor("delete", test.Teardown.WaitFor)
+			c.WaitForDeletion(test.Teardown.WaitFor)
 		}
 
 		logrus.Debug("Push new metrics to server")
@@ -65,69 +67,24 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 }
 
-// Wait for a particular resource to be either deleted or created
-func (c *Controller) WaitFor(ops string, resources []loader.WaitFor) {
+// WaitForCreation wait until a set of resources has been created
+func (c *Controller) WaitForCreation(resources []loader.WaitFor) {
 
-	for _, resource := range resources {
-
-		// Parse wait time
-		maxWait, err := time.ParseDuration(resource.Timeout)
-		if err != nil {
-			maxWait, _ = time.ParseDuration(defaultMaxWait)
-		}
-		limit := int(maxWait.Seconds()) / 5
-		logrus.Debugf(
-			"Waiting for resource %s, with max timeout %ds, and max retries %d",
-			resource.Resource,
-			int(maxWait.Seconds()),
-			limit,
-		)
-
-		// Get Resource Path:
-		// Let's first assume is a cluster-wide
-		// resource and if the namespace is
-		// defined in the resourcePath switch
-		// to namespaced
-		resourcePath := strings.TrimSuffix(strings.TrimPrefix(resource.Resource, "/"), "/")
-		gvk := strings.Split(resourcePath, "/")
-		version := gvk[0]
-		kind := gvk[1]
-		namespace := ""
-		name := gvk[2]
-		if len(gvk) > 3 {
-			namespace = gvk[2]
-			name = gvk[3]
-		}
-
-		for counter := 0; counter < limit; counter++ {
-			obj, _ := c.Provisioner.ListWithSelectors(
-				context.TODO(),
-				version,
-				kind,
-				namespace,
-				map[string]interface{}{
-					"metadata.name": name,
-				},
-			)
-
-			if ops == "create" {
-				if len(obj.Items) != 0 {
-					logrus.Debugf("Success object retrieved: %s", resource.Resource)
-					break
-				}
-				logrus.Debugf("Can't retrieve object, retrying in 5s. Object: %s", resource.Resource)
-			}
-
-			if ops == "delete" {
-				if len(obj.Items) == 0 {
-					logrus.Debugf("Object deleted: %s", resource.Resource)
-					break
-				}
-				logrus.Warningf("Object %s still exists, retrying in 5s. Object", resource.Resource)
-			}
-			time.Sleep(5 * time.Second)
-		}
+	createCondition := func(List []unstructured.Unstructured) bool {
+		return len(List) != 0
 	}
+
+	waitFor(c.Provisioner, resources, createCondition)
+}
+
+// WaitForDeletion wait until a set of resources has been deleted
+func (c *Controller) WaitForDeletion(resources []loader.WaitFor) {
+
+	delCondition := func(List []unstructured.Unstructured) bool {
+		return len(List) == 0
+	}
+
+	waitFor(c.Provisioner, resources, delCondition)
 }
 
 // Create resources defined on manifests
@@ -166,6 +123,20 @@ func (c *Controller) Teardown(objects []*loader.LoadedObject) {
 	}
 }
 
+// Set actual metrics values for promtheus package to export them
+func (c *Controller) setMetrics(metricsValues *metrics.MetricsValues) {
+
+	rMetrics := c.MetricsServer.Metrics
+
+	for key, value := range metricsValues.TestStatus {
+		rMetrics.TestStatus.WithLabelValues(key).Set(value)
+	}
+
+	rMetrics.TotalTestsFailed.Set(metricsValues.TotalTestsFailed)
+	rMetrics.TotalTestsPassed.Set(metricsValues.TotalTestsPassed)
+	rMetrics.TotalTests.Set(metricsValues.TotalTests)
+}
+
 // Update a temporary struct that will then used to push metrics in one go
 func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, result bool) *metrics.MetricsValues {
 
@@ -185,16 +156,64 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, 
 	return metricsValues
 }
 
-// Set actual metrics values for promtheus package to export them
-func (c *Controller) setMetrics(metricsValues *metrics.MetricsValues) {
+func getResourcesFromPath(resourcePath string) (string, string, string, string) {
 
-	rMetrics := c.MetricsServer.Metrics
-
-	for key, value := range metricsValues.TestStatus {
-		rMetrics.TestStatus.WithLabelValues(key).Set(value)
+	// Let's first assume is a cluster-wide resource and if the namespace is
+	// defined in the resourcePath, make it a namespaced resource
+	path := strings.TrimSuffix(strings.TrimPrefix(resourcePath, "/"), "/")
+	gvk := strings.Split(path, "/")
+	version := gvk[0]
+	kind := gvk[1]
+	namespace := ""
+	name := gvk[2]
+	if len(gvk) > 3 {
+		namespace = gvk[2]
+		name = gvk[3]
 	}
 
-	rMetrics.TotalTestsFailed.Set(metricsValues.TotalTestsFailed)
-	rMetrics.TotalTestsPassed.Set(metricsValues.TotalTestsPassed)
-	rMetrics.TotalTests.Set(metricsValues.TotalTests)
+	return version, kind, namespace, name
+
+}
+
+func getMaxRetries(waitTime string) int {
+
+	// Get max wait time and retries/interval
+	maxWait, err := time.ParseDuration(waitTime)
+	if err != nil {
+		maxWait, _ = time.ParseDuration(defaultMaxWait)
+	}
+	return int(maxWait.Seconds()) / 5
+
+}
+
+func waitFor(
+	prv provisioner.Provisioner,
+	resources []loader.WaitFor,
+	checkFunc func(List []unstructured.Unstructured) bool) {
+
+	for _, resource := range resources {
+
+		limit := getMaxRetries(resource.Timeout)
+		logrus.Debugf(
+			"Waiting for resource %s, retrying every 5s for %d times",
+			resource.Resource,
+			limit,
+		)
+		version, kind, namespace, name := getResourcesFromPath(resource.Resource)
+
+		for counter := 0; counter < limit; counter++ {
+
+			obj, _ := prv.ListWithSelectors(
+				context.TODO(), version, kind, namespace,
+				map[string]interface{}{
+					"metadata.name": name,
+				},
+			)
+			if checkFunc(obj.Items) {
+				logrus.Debugf("waitFor: operation completed.")
+				break
+			}
+			time.Sleep(5 * time.Second)
+		}
+	}
 }
