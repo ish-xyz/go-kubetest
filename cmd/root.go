@@ -40,7 +40,6 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
-	rootCmd.PersistentFlags().BoolVar(&once, "once", false, "Run the tests one time only")
 
 	rootCmd.MarkPersistentFlagRequired("testsdir")
 }
@@ -70,9 +69,5 @@ func exec(cmd *cobra.Command, args []string) {
 	metricsInstance := metrics.NewServer()
 	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
 
-	if once {
-		controllerInstance.RunOnce(testsObjects)
-		return
-	}
 	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
 }

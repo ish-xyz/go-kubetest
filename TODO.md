@@ -1,6 +1,5 @@
 - Prepare Dockerfile
 - YAMLs validation (https://github.com/dealancer/validate)
 - Add unit tests
-- Remote trigger or a "kubectl start tests" command (something like that)
 - Create more test examples
 - Complete README.md

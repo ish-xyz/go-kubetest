@@ -24,26 +24,6 @@ func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.As
 	}
 }
 
-// Run tests one time only
-func (c *Controller) RunOnce(testsList []*loader.TestDefinition) {
-
-	for _, test := range testsList {
-		logrus.Infof("Running test: '%s'", test.Name)
-
-		// Create resources and wait for creation
-		errors := c.Setup(test.ObjectsList)
-		c.WaitForCreation(test.Setup.WaitFor)
-
-		// Run the actual tests
-		c.Assert.Run(test, errors)
-
-		// Delete resources and wait for deletion
-		c.Teardown(test.ObjectsList)
-		c.WaitForDeletion(test.Teardown.WaitFor)
-	}
-	logrus.Infof("Tests execution completed.")
-}
-
 // Start controller for periodically tests executions
 func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration) {
 
@@ -166,22 +146,15 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, 
 	return metricsValues
 }
 
-func getResourcesFromPath(resourcePath string) (string, string, string, string) {
+func getResourceDataFromPath(resourcePath string) (string, string, string, string) {
 
-	// Let's first assume is a cluster-wide resource and if the namespace is
-	// defined in the resourcePath, make it a namespaced resource
 	path := strings.TrimSuffix(strings.TrimPrefix(resourcePath, "/"), "/")
 	gvk := strings.Split(path, "/")
-	version := gvk[0]
-	kind := gvk[1]
-	namespace := ""
-	name := gvk[2]
 	if len(gvk) > 3 {
-		namespace = gvk[2]
-		name = gvk[3]
+		return gvk[0], gvk[1], gvk[2], gvk[3]
 	}
 
-	return version, kind, namespace, name
+	return gvk[0], gvk[1], "", gvk[3]
 
 }
 
@@ -196,10 +169,7 @@ func getMaxRetries(waitTime string) int {
 
 }
 
-func waitFor(
-	prv provisioner.Provisioner,
-	resources []loader.WaitFor,
-	checkFunc func(list []unstructured.Unstructured) bool) {
+func waitFor(prv provisioner.Provisioner, resources []loader.WaitFor, checkFunc func([]unstructured.Unstructured) bool) {
 
 	for _, resource := range resources {
 
@@ -209,12 +179,15 @@ func waitFor(
 			resource.Resource,
 			limit,
 		)
-		version, kind, namespace, name := getResourcesFromPath(resource.Resource)
 
+		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
 		for counter := 0; counter < limit; counter++ {
 
 			obj, _ := prv.ListWithSelectors(
-				context.TODO(), version, kind, namespace,
+				context.TODO(),
+				version,
+				kind,
+				namespace,
 				map[string]interface{}{
 					"metadata.name": name,
 				},
