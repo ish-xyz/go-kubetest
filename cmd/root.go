@@ -53,6 +53,9 @@ func exec(cmd *cobra.Command, args []string) {
 	var restConfig *rest.Config
 	var err error
 
+	if debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
 	if kubeconfig == "" {
 		restConfig, err = rest.InClusterConfig()
 	} else {
@@ -62,15 +65,10 @@ func exec(cmd *cobra.Command, args []string) {
 		logrus.Fatal(err)
 	}
 
-	if debug {
-		logrus.SetLevel(logrus.DebugLevel)
-	}
-
 	ldr := loader.NewLoader()
 	testsObjects, _ := ldr.LoadTests(testsdir)
 	provisionerInstance := provisioner.NewProvisioner(restConfig)
 	assertInstance := assert.NewAssert(provisionerInstance)
-
 	metricsAddressList := strings.Split(metricsAddress, ":")
 	address := metricsAddressList[0]
 	port, err := strconv.Atoi(metricsAddressList[1])
