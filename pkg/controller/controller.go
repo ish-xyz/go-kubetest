@@ -15,6 +15,7 @@ import (
 
 const defaultMaxWait = "60s"
 
+// Return a new instance for controller
 func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
 	return &Controller{
 		Provisioner:   prv,
@@ -66,10 +67,9 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 // WaitForCreation wait until a set of resources has been created
 func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 
-	failed := true
-
 	for _, resource := range resources {
 
+		failed := true
 		limit := getMaxRetries(resource.Timeout)
 		logrus.Debugf(
 			"Waiting for resource %s, retrying every 5s for %d times",
@@ -107,10 +107,9 @@ func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 // WaitForDeletion wait until a set of resources has been deleted
 func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 
-	failed := true
-
 	for _, resource := range resources {
 
+		failed := true
 		limit := getMaxRetries(resource.Timeout)
 		logrus.Debugf(
 			"Waiting for resource %s, retrying every 5s for %d times",
@@ -131,8 +130,9 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 				},
 			)
 			if len(obj.Items) == 0 {
-				failed = false
+
 				logrus.Debugf("resource %s has been created.", resource.Resource)
+				failed = false
 				break
 			}
 			time.Sleep(5 * time.Second)
