@@ -154,7 +154,7 @@ func getResourceDataFromPath(resourcePath string) (string, string, string, strin
 		return gvk[0], gvk[1], gvk[2], gvk[3]
 	}
 
-	return gvk[0], gvk[1], "", gvk[3]
+	return gvk[0], gvk[1], "", gvk[2]
 
 }
 

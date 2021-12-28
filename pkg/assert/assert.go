@@ -17,14 +17,13 @@ func NewAssert(prv provisioner.Provisioner) *Assert {
 func (a *Assert) Run(test *loader.TestDefinition, errors []string) bool {
 
 	testResult := true
-
 	for _, assertion := range test.Assert {
 		var assertRes bool
-		if assertion.Type == "expectedResources" {
-			assertRes = expectedResources(a.Provisioner, assertion)
-		}
 
-		if assertion.Type == "expectedErrors" {
+		switch assertion.Type {
+		case "expectedResources":
+			assertRes = expectedResources(a.Provisioner, assertion)
+		case "expectedErrors":
 			assertRes = expectedErrors(assertion.Errors, errors)
 		}
 
