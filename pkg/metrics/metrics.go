@@ -18,10 +18,11 @@ func NewMetricsValues() *MetricsValues {
 	}
 }
 
-func NewServer() *Server {
+func NewServer(address string, port int) *Server {
+
 	return &Server{
-		Port:    9000,
-		Address: "0.0.0.0",
+		Port:    port,
+		Address: address,
 		Path:    "/metrics",
 		Metrics: Metrics{
 			TestStatus: promauto.NewGaugeVec(

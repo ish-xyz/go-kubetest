@@ -41,7 +41,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			if !c.WaitForCreation(test.Setup.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be created, skipping test '%s'", test.Name)
 				metricsValues = updateMetricsValues(metricsValues, test.Name, false)
-				break
+				continue
 			}
 
 			// Run the actual tests
@@ -52,6 +52,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 			c.Teardown(test.ObjectsList)
 			if !c.WaitForDeletion(test.Teardown.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be deleted, test: '%s'", test.Name)
+				continue
 			}
 		}
 
@@ -61,7 +62,6 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
 	}
-
 }
 
 // WaitForCreation wait until a set of resources has been created
@@ -71,13 +71,9 @@ func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 
 		failed := true
 		limit := getMaxRetries(resource.Timeout)
-		logrus.Debugf(
-			"Waiting for resource %s, retrying every 5s for %d times",
-			resource.Resource,
-			limit,
-		)
-
+		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
 		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
+
 		for counter := 0; counter < limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
@@ -111,13 +107,9 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 
 		failed := true
 		limit := getMaxRetries(resource.Timeout)
-		logrus.Debugf(
-			"Waiting for resource %s, retrying every 5s for %d times",
-			resource.Resource,
-			limit,
-		)
-
+		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
 		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
+
 		for counter := 0; counter < limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
@@ -157,9 +149,9 @@ func (c *Controller) Setup(objects []*loader.LoadedObject) []string {
 			logrus.Debugf("Couldn't delete resource %s", obj.Object.GetName())
 			logrus.Debugln(err)
 			errors = append(errors, fmt.Sprintf("%v", err))
-		} else {
-			logrus.Debugf("Setup: resource created %s\n", obj.Object.GetName())
+			continue
 		}
+		logrus.Debugf("Setup: resource created %s\n", obj.Object.GetName())
 	}
 
 	return errors
@@ -176,9 +168,9 @@ func (c *Controller) Teardown(objects []*loader.LoadedObject) {
 		if err != nil {
 			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.Object.GetName())
 			logrus.Errorln(err)
-		} else {
-			logrus.Debugf("Teardown: Resource deleted %s\n", obj.Object.GetName())
+			continue
 		}
+		logrus.Debugf("Teardown: Resource deleted %s\n", obj.Object.GetName())
 	}
 }
 

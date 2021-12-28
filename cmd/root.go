@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/ish-xyz/go-kubetest/pkg/assert"
@@ -16,12 +18,13 @@ import (
 
 var (
 	// Used for flags
-	testsdir   string // required flag
-	kubeconfig string
-	interval   int
-	debug      bool
-	once       bool
-	rootCmd    = &cobra.Command{
+	testsdir       string // required flag
+	kubeconfig     string
+	metricsAddress string
+	interval       int
+	debug          bool
+
+	rootCmd = &cobra.Command{
 		Use:   "kubetest",
 		Short: "A tool to test your kubernetes cluster",
 		Long: `Kubetest run as in-cluster solution and run
@@ -37,6 +40,7 @@ func Execute() error {
 
 func init() {
 	rootCmd.PersistentFlags().StringVar(&testsdir, "testsdir", "", "The directory with tests definitions")
+	rootCmd.PersistentFlags().StringVar(&metricsAddress, "metrics-address", "0.0.0.0:9000", "Run the controller in debug mode")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
@@ -66,7 +70,15 @@ func exec(cmd *cobra.Command, args []string) {
 	testsObjects, _ := ldr.LoadTests(testsdir)
 	provisionerInstance := provisioner.NewProvisioner(restConfig)
 	assertInstance := assert.NewAssert(provisionerInstance)
-	metricsInstance := metrics.NewServer()
+
+	metricsAddressList := strings.Split(metricsAddress, ":")
+	address := metricsAddressList[0]
+	port, err := strconv.Atoi(metricsAddressList[1])
+	if err != nil {
+		logrus.Fatal(err)
+	}
+
+	metricsInstance := metrics.NewServer(address, port)
 	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
 
 	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
