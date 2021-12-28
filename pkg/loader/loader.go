@@ -85,7 +85,6 @@ func (ldr *Loader) LoadTests(testsDir string) ([]*TestDefinition, error) {
 				continue
 			}
 			test[index] = singleTest
-			fmt.Printf("%+v\n", singleTest)
 		}
 
 		tests = append(tests, test...)

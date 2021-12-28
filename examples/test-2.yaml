@@ -1,4 +1,4 @@
-- name: namespace_creation_1
+- name: namespace_creation_2
   manifest: ./manifests/test-1.yaml
   setup:
     waitFor:
