@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
@@ -9,28 +10,98 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-/*
-Make controller.Run() testable with stopCh
-*/
-
 func TestSetup(t *testing.T) {
 
-	// Prepare mock
-	argObj := &unstructured.Unstructured{
+	// Prepare test data & mock
+	testedMethod := "CreateOrUpdate"
+	objects := make([]*unstructured.Unstructured, 1)
+	objects[0] = &unstructured.Unstructured{
 		Object: map[string]interface{}{
 			"metadata": map[string]interface{}{
 				"name": "MockTest",
 			},
 		},
 	}
-	objects := make([]*unstructured.Unstructured, 1)
 	prvMock := new(provisioner.ProvisionerMock)
-	prvMock.On("CreateOrUpdate", context.TODO(), argObj).Return(nil)
+	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(nil)
 
 	// Run tests
 	ctrl := NewController(prvMock, nil, nil)
-	err := ctrl.Setup(objects)
+	errors := ctrl.Setup(objects)
 
-	assert.Nil(t, err)
-	prvMock.AssertNumberOfCalls(t, "CreateOrUpdate", 1)
+	assert.Len(t, errors, 0)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+}
+
+func TestSetupWithErrors(t *testing.T) {
+
+	// Prepare test data & mock
+	testedMethod := "CreateOrUpdate"
+	objects := make([]*unstructured.Unstructured, 1)
+	objects[0] = &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name": "MockTest",
+			},
+		},
+	}
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(
+		errors.New("failed to create"),
+	)
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	errors := ctrl.Setup(objects)
+
+	assert.Len(t, errors, 1)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+}
+
+func TestTeardown(t *testing.T) {
+
+	// Prepare test data & mock
+	testedMethod := "Delete"
+	objects := make([]*unstructured.Unstructured, 1)
+	objects[0] = &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name": "MockTest",
+			},
+		},
+	}
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(nil)
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	errors := ctrl.Teardown(objects)
+
+	assert.Len(t, errors, 0)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+}
+
+func TestTeardownWithErrors(t *testing.T) {
+
+	// Prepare test data & mock
+	testedMethod := "Delete"
+	objects := make([]*unstructured.Unstructured, 1)
+	objects[0] = &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"metadata": map[string]interface{}{
+				"name": "MockTest",
+			},
+		},
+	}
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(
+		errors.New("failed to delete"),
+	)
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	errors := ctrl.Teardown(objects)
+
+	assert.Len(t, errors, 1)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
 }

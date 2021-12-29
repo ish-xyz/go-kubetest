@@ -76,7 +76,7 @@ func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
 		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
 
-		for counter := 0; counter < limit; counter++ {
+		for counter := 0; counter <= limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
@@ -112,7 +112,7 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
 		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
 
-		for counter := 0; counter < limit; counter++ {
+		for counter := 0; counter <= limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
@@ -170,8 +170,8 @@ func (c *Controller) Teardown(objects []*unstructured.Unstructured) []string {
 		obj := objects[len(objects)-1-index]
 		err := c.Provisioner.Delete(context.TODO(), obj)
 		if err != nil {
-			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.GetName())
-			logrus.Errorln(err)
+			logrus.Debugf("Couldn't delete resource %s", obj.GetName())
+			logrus.Debugln(err)
 			errors = append(errors, fmt.Sprintf("%v", err))
 			continue
 		}
