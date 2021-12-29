@@ -31,7 +31,6 @@ func (a *Assert) Run(test *loader.TestDefinition, errors []string) bool {
 			testResult = false
 		}
 	}
-
 	return testResult
 }
 

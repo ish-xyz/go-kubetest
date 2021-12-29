@@ -11,6 +11,7 @@ import (
 	"github.com/ish-xyz/go-kubetest/pkg/metrics"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 const defaultMaxWait = "60s"
@@ -32,6 +33,7 @@ func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration)
 
 	logrus.Info("Starting controller")
 	for {
+
 		metricsValues := metrics.NewMetricsValues()
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
@@ -139,26 +141,28 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 }
 
 // Create resources defined on manifests
-func (c *Controller) Setup(objects []*loader.LoadedObject) []string {
+func (c *Controller) Setup(objects []*unstructured.Unstructured) []string {
 
 	var errors []string
 
 	for _, obj := range objects {
 		err := c.Provisioner.CreateOrUpdate(context.TODO(), obj)
 		if err != nil {
-			logrus.Debugf("Couldn't delete resource %s", obj.Object.GetName())
+			logrus.Debugf("Couldn't create resource %s", obj.GetName())
 			logrus.Debugln(err)
 			errors = append(errors, fmt.Sprintf("%v", err))
 			continue
 		}
-		logrus.Debugf("Setup: resource created %s\n", obj.Object.GetName())
+		logrus.Debugf("Setup: resource created %s\n", obj.GetName())
 	}
 
 	return errors
 }
 
 // Delete resources defined on manifests
-func (c *Controller) Teardown(objects []*loader.LoadedObject) {
+func (c *Controller) Teardown(objects []*unstructured.Unstructured) []string {
+
+	var errors []string
 
 	for index := range objects {
 		// Teardown needs to delete the objects in the
@@ -166,12 +170,14 @@ func (c *Controller) Teardown(objects []*loader.LoadedObject) {
 		obj := objects[len(objects)-1-index]
 		err := c.Provisioner.Delete(context.TODO(), obj)
 		if err != nil {
-			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.Object.GetName())
+			logrus.Errorf("Teardown: Couldn't delete resource %s", obj.GetName())
 			logrus.Errorln(err)
+			errors = append(errors, fmt.Sprintf("%v", err))
 			continue
 		}
-		logrus.Debugf("Teardown: Resource deleted %s\n", obj.Object.GetName())
+		logrus.Debugf("Teardown: Resource deleted %s\n", obj.GetName())
 	}
+	return errors
 }
 
 // Set actual metrics values for promtheus package to export them

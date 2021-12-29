@@ -78,6 +78,5 @@ func exec(cmd *cobra.Command, args []string) {
 
 	metricsInstance := metrics.NewServer(address, port)
 	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
-
 	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
 }

@@ -21,9 +21,9 @@ func NewLoader() *Loader {
 
 // Takes in the filepath to a YAML file and returns an unstructured object
 // TODO: load yaml file with multiple resources
-func (ldr *Loader) LoadManifests(filepath string) ([]*LoadedObject, error) {
+func (ldr *Loader) LoadManifests(filepath string) ([]*unstructured.Unstructured, error) {
 
-	var objects []*LoadedObject
+	var objects []*unstructured.Unstructured
 
 	decUnstructured := yaml.NewDecodingSerializer(unstructured.UnstructuredJSONScheme)
 	data, err := ioutil.ReadFile(filepath)
@@ -33,15 +33,14 @@ func (ldr *Loader) LoadManifests(filepath string) ([]*LoadedObject, error) {
 
 	manifests := strings.Split(string(data), YAMLDelimiter)
 	for _, manifest := range manifests {
-		object := &LoadedObject{}
 		unstructObject := &unstructured.Unstructured{}
 		_, _, err = decUnstructured.Decode([]byte(manifest), nil, unstructObject)
 		if err != nil {
+			logrus.Debugln(err)
 			return nil, err
 		}
 
-		object.Object = unstructObject
-		objects = append(objects, object)
+		objects = append(objects, unstructObject)
 	}
 
 	return objects, err
@@ -76,7 +75,7 @@ func (ldr *Loader) LoadTests(testsDir string) ([]*TestDefinition, error) {
 			logrus.Debug(err)
 		}
 
-		// Load the linked manifests
+		// Load the linked manifest
 		for index, singleTest := range test {
 			singleTest.ObjectsList, err = ldr.LoadManifests(fmt.Sprintf("%s/%s", testsDir, singleTest.Manifest))
 			if err != nil {

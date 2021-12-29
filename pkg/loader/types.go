@@ -1,7 +1,6 @@
 package loader
 
 import (
-	"k8s.io/apimachinery/pkg/api/meta"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -15,7 +14,7 @@ type Config struct {
 type TestDefinition struct {
 	Name        string `yaml:"name"`
 	Manifest    string `yaml:"manifest"`
-	ObjectsList []*LoadedObject
+	ObjectsList []*unstructured.Unstructured
 
 	Setup struct {
 		WaitFor []WaitFor `yaml:"waitFor"`
@@ -31,11 +30,6 @@ type TestDefinition struct {
 type WaitFor struct {
 	Resource string `yaml:"resource"`
 	Timeout  string `yaml:"timeout"`
-}
-
-type LoadedObject struct {
-	Object  *unstructured.Unstructured
-	Mapping *meta.RESTMapping
 }
 
 type Assertion struct {

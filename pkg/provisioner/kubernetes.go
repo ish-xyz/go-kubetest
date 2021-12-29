@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ish-xyz/go-kubetest/pkg/loader"
 	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -36,10 +35,9 @@ func NewProvisioner(cfg *rest.Config) *Kubernetes {
 }
 
 // Create or update an unstructured resource
-func (k *Kubernetes) CreateOrUpdate(ctx context.Context, object *loader.LoadedObject) error {
+func (k *Kubernetes) CreateOrUpdate(ctx context.Context, obj *unstructured.Unstructured) error {
 
 	var dr dynamic.ResourceInterface
-	obj := object.Object
 
 	// Init discovery client and mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)
@@ -73,10 +71,9 @@ func (k *Kubernetes) CreateOrUpdate(ctx context.Context, object *loader.LoadedOb
 }
 
 // Delete an unstructured resource
-func (k *Kubernetes) Delete(ctx context.Context, object *loader.LoadedObject) error {
+func (k *Kubernetes) Delete(ctx context.Context, obj *unstructured.Unstructured) error {
 
 	var dr dynamic.ResourceInterface
-	obj := object.Object
 
 	// Init discovery client and mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)
