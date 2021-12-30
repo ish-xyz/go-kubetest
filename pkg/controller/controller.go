@@ -2,6 +2,7 @@ package controller
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -71,31 +72,34 @@ func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 
 	for _, resource := range resources {
 
-		failed := true
-		limit := getMaxRetries(resource.Timeout)
-		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
-		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
+		gvkData, err := getResourceDataFromPath(resource.Resource)
+		if err != nil {
+			logrus.Debugf("%v", err)
+			return false
+		}
+		created, interval := false, 2
+		limit := getMaxRetries(resource.Timeout, interval)
 
-		for counter := 0; counter <= limit; counter++ {
+		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
+		for counter := 0; counter < limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
-				version,
-				kind,
-				namespace,
+				gvkData["version"],
+				gvkData["kind"],
+				gvkData["namespace"],
 				map[string]interface{}{
-					"metadata.name": name,
+					"metadata.name": gvkData["name"],
 				},
 			)
 			if len(obj.Items) != 0 {
-				failed = false
+				created = true
 				logrus.Debugf("resource %s has been deleted.", resource.Resource)
 				break
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Duration(interval) * time.Second)
 		}
-
-		if failed {
+		if !created {
 			return false
 		}
 	}
@@ -107,32 +111,34 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 
 	for _, resource := range resources {
 
-		failed := true
-		limit := getMaxRetries(resource.Timeout)
-		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
-		version, kind, namespace, name := getResourceDataFromPath(resource.Resource)
+		gvkData, err := getResourceDataFromPath(resource.Resource)
+		if err != nil {
+			logrus.Debugf("%v", err)
+			return false
+		}
+		deleted, interval := false, 2
+		limit := getMaxRetries(resource.Timeout, interval)
 
-		for counter := 0; counter <= limit; counter++ {
+		logrus.Debugf("Waiting for resource %s, retrying every 5s for %d times", resource.Resource, limit)
+		for counter := 0; counter < limit; counter++ {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
-				version,
-				kind,
-				namespace,
+				gvkData["version"],
+				gvkData["kind"],
+				gvkData["namespace"],
 				map[string]interface{}{
-					"metadata.name": name,
+					"metadata.name": gvkData["name"],
 				},
 			)
 			if len(obj.Items) == 0 {
-
 				logrus.Debugf("resource %s has been created.", resource.Resource)
-				failed = false
+				deleted = true
 				break
 			}
-			time.Sleep(5 * time.Second)
+			time.Sleep(time.Duration(interval) * time.Second)
 		}
-
-		if failed {
+		if !deleted {
 			return false
 		}
 	}
@@ -213,25 +219,41 @@ func updateMetricsValues(metricsValues *metrics.MetricsValues, testName string, 
 	return metricsValues
 }
 
-func getResourceDataFromPath(resourcePath string) (string, string, string, string) {
+func getResourceDataFromPath(resourcePath string) (map[string]string, error) {
 
 	path := strings.TrimSuffix(strings.TrimPrefix(resourcePath, "/"), "/")
 	gvk := strings.Split(path, "/")
-	if len(gvk) > 3 {
-		return gvk[0], gvk[1], gvk[2], gvk[3]
+
+	if len(gvk) < 3 {
+		err := errors.New("Can't retrieve gvk from resourcePath")
+		return map[string]string{}, err
 	}
 
-	return gvk[0], gvk[1], "", gvk[2]
+	if len(gvk) > 3 {
+		return map[string]string{
+			"version":   gvk[0],
+			"kind":      gvk[1],
+			"namespace": gvk[2],
+			"name":      gvk[3],
+		}, nil
+	}
+
+	return map[string]string{
+		"version":   gvk[0],
+		"kind":      gvk[1],
+		"namespace": "",
+		"name":      gvk[2],
+	}, nil
 
 }
 
-func getMaxRetries(waitTime string) int {
+func getMaxRetries(waitTime string, interval int) int {
 
 	// Get max wait time and retries/interval
 	maxWait, err := time.ParseDuration(waitTime)
 	if err != nil {
 		maxWait, _ = time.ParseDuration(defaultMaxWait)
 	}
-	return int(maxWait.Seconds()) / 5
+	return int(maxWait.Seconds()) / interval
 
 }

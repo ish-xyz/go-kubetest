@@ -5,10 +5,39 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/ish-xyz/go-kubetest/pkg/loader"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/stretchr/testify/assert"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
+
+func TestGetResourceDataFromPath(t *testing.T) {
+
+	gvkData, err := getResourceDataFromPath("v1/Namespace/namespace-1")
+
+	assert.Nil(t, err)
+	assert.Equal(t, gvkData["version"], "v1")
+	assert.Equal(t, gvkData["kind"], "Namespace")
+	assert.Equal(t, gvkData["namespace"], "")
+	assert.Equal(t, gvkData["name"], "namespace-1")
+
+}
+
+func TestGetResourceDataFromPathErrors(t *testing.T) {
+
+	_, err := getResourceDataFromPath("wrong resource path")
+
+	assert.NotNil(t, err)
+
+}
+
+func TestGetMaxRetriesErrors(t *testing.T) {
+
+	// Will default to 60s
+	limit := getMaxRetries("wrongString", 6)
+
+	assert.Equal(t, limit, 10)
+}
 
 func TestSetup(t *testing.T) {
 
@@ -104,4 +133,151 @@ func TestTeardownWithErrors(t *testing.T) {
 
 	assert.Len(t, errors, 1)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+}
+
+func TestWaitForDeletion(t *testing.T) {
+
+	//Prepare test data & mock
+	testedMethod := "ListWithSelectors"
+	resources := make([]loader.WaitFor, 1)
+	resources[0] = loader.WaitFor{
+		Resource: "v1/Namespace/namespace-1",
+		Timeout:  "5s",
+	}
+	returnObject := &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{},
+	}
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		testedMethod,
+		context.TODO(),
+		"v1",
+		"Namespace",
+		"",
+		map[string]interface{}{
+			"metadata.name": "namespace-1",
+		}).Return(returnObject, nil)
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	result := ctrl.WaitForDeletion(resources)
+
+	assert.True(t, result)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+
+}
+
+func TestWaitForCreation(t *testing.T) {
+
+	//Prepare test data & mock
+	testedMethod := "ListWithSelectors"
+	resources := make([]loader.WaitFor, 1)
+	resources[0] = loader.WaitFor{
+		Resource: "v1/Namespace/namespace-1",
+		Timeout:  "5s",
+	}
+	returnObject := &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"name": "MockTest",
+					},
+				},
+			},
+		},
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		testedMethod,
+		context.TODO(),
+		"v1",
+		"Namespace",
+		"",
+		map[string]interface{}{
+			"metadata.name": "namespace-1",
+		}).Return(returnObject, nil)
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	result := ctrl.WaitForCreation(resources)
+
+	assert.True(t, result)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
+
+}
+
+func TestWaitForDeletionErrors(t *testing.T) {
+
+	//Prepare test data & mock
+	testedMethod := "ListWithSelectors"
+	resources := make([]loader.WaitFor, 1)
+	resources[0] = loader.WaitFor{
+		Resource: "v1/Namespace/namespace-1",
+		Timeout:  "5s",
+	}
+	returnObject := &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"metadata": map[string]interface{}{
+						"name": "MockTest",
+					},
+				},
+			},
+		},
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		testedMethod,
+		context.TODO(),
+		"v1",
+		"Namespace",
+		"",
+		map[string]interface{}{
+			"metadata.name": "namespace-1",
+		}).Return(returnObject, errors.New("error retrieving object"))
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	result := ctrl.WaitForDeletion(resources)
+
+	assert.False(t, result)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 2)
+
+}
+
+func TestWaitForCreationErrors(t *testing.T) {
+
+	//Prepare test data & mock
+	testedMethod := "ListWithSelectors"
+	resources := make([]loader.WaitFor, 1)
+	resources[0] = loader.WaitFor{
+		Resource: "v1/Namespace/namespace-1",
+		Timeout:  "5s",
+	}
+	returnObject := &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{},
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		testedMethod,
+		context.TODO(),
+		"v1",
+		"Namespace",
+		"",
+		map[string]interface{}{
+			"metadata.name": "namespace-1",
+		}).Return(returnObject, errors.New("error retrieving object"))
+
+	// Run tests
+	ctrl := NewController(prvMock, nil, nil)
+	result := ctrl.WaitForCreation(resources)
+
+	assert.False(t, result)
+	prvMock.AssertNumberOfCalls(t, testedMethod, 2)
+
 }
