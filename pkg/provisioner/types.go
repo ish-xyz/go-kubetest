@@ -10,12 +10,14 @@ import (
 	"k8s.io/client-go/rest"
 )
 
+// Interfaces
 type Provisioner interface {
 	CreateOrUpdate(ctx context.Context, object *unstructured.Unstructured) error
 	Delete(ctx context.Context, object *unstructured.Unstructured) error
 	ListWithSelectors(ctx context.Context, apiVersion, kind, namespace string, selectors map[string]interface{}) (*unstructured.UnstructuredList, error)
 }
 
+// Provisioners
 type Kubernetes struct {
 	Client    *kubernetes.Clientset
 	DynClient dynamic.Interface

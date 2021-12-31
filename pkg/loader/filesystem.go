@@ -15,13 +15,13 @@ import (
 const YAMLDelimiter = "---"
 
 // Return a new Loader instance
-func NewLoader() *Loader {
-	return &Loader{}
+func NewFileSystemLoader() *FileSystemLoader {
+	return &FileSystemLoader{}
 }
 
 // Takes in the filepath to a YAML file and returns an unstructured object
 // TODO: load yaml file with multiple resources
-func (ldr *Loader) LoadManifests(filepath string) ([]*unstructured.Unstructured, error) {
+func (ldr *FileSystemLoader) LoadManifests(filepath string) ([]*unstructured.Unstructured, error) {
 
 	var objects []*unstructured.Unstructured
 
@@ -47,7 +47,7 @@ func (ldr *Loader) LoadManifests(filepath string) ([]*unstructured.Unstructured,
 }
 
 // Load multiple test files as one big array
-func (ldr *Loader) LoadTests(testsDir string) ([]*TestDefinition, error) {
+func (ldr *FileSystemLoader) LoadTests(testsDir string) ([]*TestDefinition, error) {
 
 	var tests []*TestDefinition
 

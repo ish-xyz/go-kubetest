@@ -61,6 +61,7 @@ func exec(cmd *cobra.Command, args []string) {
 	var restConfig *rest.Config
 	var err error
 
+	// preliminary checks
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	}
@@ -77,20 +78,18 @@ func exec(cmd *cobra.Command, args []string) {
 	client, err := kubernetes.NewForConfig(restConfig)
 	handleErr(err)
 
-	ldr := loader.NewLoader()
-	provisionerInstance := provisioner.NewProvisioner(restConfig, client, dynclient)
-
-	testsObjects, _ := ldr.LoadTests(testsdir)
-	assertInstance := assert.NewAssert(provisionerInstance)
 	metricsAddressList := strings.Split(metricsAddress, ":")
 	address := metricsAddressList[0]
 	port, err := strconv.Atoi(metricsAddressList[1])
-	if err != nil {
-		logrus.Fatal(err)
-	}
+	handleErr(err)
 
-	metricsInstance := metrics.NewServer(address, port)
-	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
-	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
+	// initiate objects
+	prv := provisioner.NewProvisioner(restConfig, client, dynclient)
+	asrt := assert.NewAssert(prv)
+	ldr := loader.NewFileSystemLoader()
+
+	ms := metrics.NewServer(address, port)
+	controllerInstance := controller.NewController(ldr, prv, ms, asrt)
+	controllerInstance.Run(testsdir, time.Duration(interval)*time.Second)
 
 }

@@ -18,8 +18,9 @@ import (
 const defaultMaxWait = "60s"
 
 // Return a new instance for controller
-func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
+func NewController(ldr loader.Loader, prv provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
 	return &Controller{
+		Loader:        ldr,
 		Provisioner:   prv,
 		MetricsServer: ms,
 		Assert:        a,
@@ -27,7 +28,13 @@ func NewController(prv provisioner.Provisioner, ms *metrics.Server, a *assert.As
 }
 
 // Start controller for periodically tests executions
-func (c *Controller) Run(testsList []*loader.TestDefinition, wait time.Duration) {
+func (c *Controller) Run(testsdir string, wait time.Duration) {
+
+	testsList, err := c.Loader.LoadTests(testsdir)
+	if err != nil {
+		logrus.Fatal(err)
+		return
+	}
 
 	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
 	go c.MetricsServer.Serve()

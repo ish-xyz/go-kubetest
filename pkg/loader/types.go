@@ -4,8 +4,13 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
-type Loader struct{}
+// Interfaces
+type Loader interface {
+	LoadManifests(filepath string) ([]*unstructured.Unstructured, error)
+	LoadTests(testsDir string) ([]*TestDefinition, error)
+}
 
+// Data
 type Config struct {
 	TestsDir string
 	Interval int
@@ -41,3 +46,8 @@ type Assertion struct {
 	Count      int                    `yaml:"count"`
 	Errors     []string               `yaml:"expectedErrors"`
 }
+
+// Loaders
+type FileSystemLoader struct{}
+
+type KubernetesLoader struct{}
