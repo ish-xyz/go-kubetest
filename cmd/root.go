@@ -12,6 +12,8 @@ import (
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
 )
@@ -48,6 +50,12 @@ func init() {
 	rootCmd.MarkPersistentFlagRequired("testsdir")
 }
 
+func handleErr(err error) {
+	if err != nil {
+		logrus.Fatal(err)
+	}
+}
+
 func exec(cmd *cobra.Command, args []string) {
 
 	var restConfig *rest.Config
@@ -61,13 +69,18 @@ func exec(cmd *cobra.Command, args []string) {
 	} else {
 		restConfig, err = clientcmd.BuildConfigFromFlags("", kubeconfig)
 	}
-	if err != nil {
-		logrus.Fatal(err)
-	}
+	handleErr(err)
+
+	dynclient, err := dynamic.NewForConfig(restConfig)
+	handleErr(err)
+
+	client, err := kubernetes.NewForConfig(restConfig)
+	handleErr(err)
 
 	ldr := loader.NewLoader()
+	provisionerInstance := provisioner.NewProvisioner(restConfig, client, dynclient)
+
 	testsObjects, _ := ldr.LoadTests(testsdir)
-	provisionerInstance := provisioner.NewProvisioner(restConfig)
 	assertInstance := assert.NewAssert(provisionerInstance)
 	metricsAddressList := strings.Split(metricsAddress, ":")
 	address := metricsAddressList[0]
@@ -79,4 +92,5 @@ func exec(cmd *cobra.Command, args []string) {
 	metricsInstance := metrics.NewServer(address, port)
 	controllerInstance := controller.NewController(provisionerInstance, metricsInstance, assertInstance)
 	controllerInstance.Run(testsObjects, time.Duration(interval)*time.Second)
+
 }

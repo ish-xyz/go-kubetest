@@ -1,0 +1,83 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tests.go-kubetest.io
+spec:
+  group: go-kubetest.io
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: array
+              items:
+                type: object
+                properties:
+                  name:
+                    type: string
+                  manifest:
+                    type: string
+                  setup:
+                    type: object
+                    properties:
+                      waitFor:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            resource:
+                              type: string
+                            timeout:
+                              type: string
+                        required:
+                        - resource
+                        - timeout
+                  assert:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        type:
+                          type: string
+                        apiVersion:
+                          type: string
+                        kind:
+                          type: string
+                        count:
+                          type: integer
+                        errors:
+                          type: array
+                          items:
+                            type: string
+                        selectors:
+                          x-kubernetes-preserve-unknown-fields: true
+                  teardown:
+                    type: object
+                    properties:
+                      waitFor:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            resource:
+                              type: string
+                            timeout:
+                              type: string
+                required:
+                - setup
+                - assert
+                - teardown
+  scope: Namespaced
+  names:
+    plural: tests
+    singular: test
+    kind: TestDefinition
+    shortNames:
+    - td
+
+# Add testresult CRD
+# Add testresource CRD

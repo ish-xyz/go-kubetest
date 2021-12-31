@@ -1,4 +1,8 @@
-- Prepare Dockerfile
+- Kubernetes provisioner: cleanup repeated code
+- Prepare all CRDs
+- Loader: load tests from CRDS instead of filesystem
+- Publish test results as crds
+- Prepare Dockerfile & Chart
 - YAMLs validation (https://github.com/dealancer/validate)
 - Add unit tests
 - Create more test examples
