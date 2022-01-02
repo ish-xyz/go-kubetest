@@ -4,7 +4,8 @@ metadata:
   name: my-test-definition
 spec:
   - name: namespace_creation_0
-    manifest: namespaces
+    resources:
+    - namespaces
     setup:
       waitFor:
       - resource: v1/Namespace/namespace-1

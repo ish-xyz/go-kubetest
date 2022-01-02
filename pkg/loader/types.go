@@ -18,34 +18,34 @@ type Config struct {
 }
 
 type TestDefinition struct {
-	Name        string `yaml:"name"`
-	Manifest    string `yaml:"manifest"`
+	Name        string   `yaml:"name" json:"name"`
+	Resources   []string `yaml:"resources" json:"resources"`
 	ObjectsList []*unstructured.Unstructured
 
 	Setup struct {
-		WaitFor []WaitFor `yaml:"waitFor"`
-	} `yaml:"setup"`
+		WaitFor []WaitFor `yaml:"waitFor" json:"waitFor"`
+	} `yaml:"setup" json:"setup"`
 
 	Teardown struct {
-		WaitFor []WaitFor `yaml:"waitFor"`
-	} `yaml:"teardown"`
+		WaitFor []WaitFor `yaml:"waitFor" json:"waitFor"`
+	} `yaml:"teardown" json:"teardown"`
 
-	Assert []Assertion `yaml:"assert"`
+	Assert []Assertion `yaml:"assert" json:"assert"`
 }
 
 type WaitFor struct {
-	Resource string `yaml:"resource"`
-	Timeout  string `yaml:"timeout"`
+	Resource string `yaml:"resource" json:"resource"`
+	Timeout  string `yaml:"timeout" json:"timeout"`
 }
 
 type Assertion struct {
-	Type       string                 `yaml:"type"`
-	ApiVersion string                 `yaml:"apiVersion"`
-	Kind       string                 `yaml:"kind"`
-	Namespace  string                 `yaml:"namespace"`
-	Selectors  map[string]interface{} `yaml:"selectors"`
-	Count      int                    `yaml:"count"`
-	Errors     []string               `yaml:"expectedErrors"`
+	Type       string                 `yaml:"type" json:"type"`
+	ApiVersion string                 `yaml:"apiVersion" json:"apiVersion"`
+	Kind       string                 `yaml:"kind" json:"kind"`
+	Namespace  string                 `yaml:"namespace" json:"namespace"`
+	Selectors  map[string]interface{} `yaml:"selectors" json:"selectors"`
+	Count      int                    `yaml:"count" json:"count"`
+	Errors     []string               `yaml:"expectedErrors" json:"expectedErrors"`
 }
 
 // Loaders

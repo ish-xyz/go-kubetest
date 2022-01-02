@@ -2,10 +2,10 @@ package loader
 
 import (
 	"context"
-	"fmt"
+	"encoding/json"
 
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
-	"github.com/mitchellh/mapstructure"
+	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
@@ -17,7 +17,7 @@ func NewKubernetesLoader(prv provisioner.Provisioner) *KubernetesLoader {
 }
 
 // Load testData manifests
-func (ldr *KubernetesLoader) LoadManifests(testDataName string) ([]*unstructured.Unstructured, error) {
+func (ldr *KubernetesLoader) LoadManifests(testResource string) ([]*unstructured.Unstructured, error) {
 	/*
 		TODO:
 		get test-resource
@@ -44,17 +44,33 @@ func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, err
 	}
 
 	for _, manifest := range testDefinitions.Items {
-		testDefinition := &TestDefinition{}
 
-		for _, x := range manifest.Object["spec"].([]interface{}) {
-			mapstructure.Decode(x, testDefinition)
+		for _, testDef := range manifest.Object["spec"].([]interface{}) {
+			testDefStruct := &TestDefinition{}
+			uobj := unstructured.Unstructured{Object: testDef.(map[string]interface{})}
+			testDefJson, err := uobj.MarshalJSON()
+			if err != nil {
+				logrus.Warningf("Can't Marshal JSON for object")
+				logrus.Debugln(err)
+				continue
+			}
+
+			err = json.Unmarshal(testDefJson, testDefStruct)
+			if err != nil {
+				logrus.Warningf("Can't unmarshal test %s", string(testDefJson))
+				logrus.Debugln(err)
+				continue
+			}
+
+			testDefStruct.ObjectsList, err = ldr.LoadManifests("")
+			if err != nil {
+				logrus.Warningf("Error while loading manifests object in test %s", testDefStruct.Name)
+				logrus.Debugln(err)
+				continue
+			}
+			tests = append(tests, testDefStruct)
 		}
-		//TODO: Load Object
-
-		tests = append(tests, testDefinition)
 	}
 
-	fmt.Println(tests)
-
-	return nil, nil
+	return tests, nil
 }

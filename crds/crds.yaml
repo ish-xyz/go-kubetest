@@ -19,8 +19,10 @@ spec:
                 properties:
                   name:
                     type: string
-                  manifest:
-                    type: string
+                  resources:
+                    type: array
+                    items:
+                      type: string
                   setup:
                     type: object
                     properties:

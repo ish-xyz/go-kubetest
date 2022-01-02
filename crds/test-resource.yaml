@@ -12,4 +12,3 @@ spec:
         name: namespace-1
       spec: {}
       status: {}
-

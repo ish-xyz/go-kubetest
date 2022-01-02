@@ -76,17 +76,19 @@ func (ldr *FileSystemLoader) LoadTests(testsDir string) ([]*TestDefinition, erro
 		}
 
 		// Load the linked manifest
-		for index, singleTest := range test {
-			singleTest.ObjectsList, err = ldr.LoadManifests(fmt.Sprintf("%s/%s", testsDir, singleTest.Manifest))
-			if err != nil {
-				logrus.Errorf("Error while loading manifests object in test %s", singleTest.Name)
-				logrus.Debug(err)
-				continue
-			}
-			test[index] = singleTest
-		}
+		for _, singleTest := range test {
 
-		tests = append(tests, test...)
+			for _, resource := range singleTest.Resources {
+				objects, err := ldr.LoadManifests(fmt.Sprintf("%s/%s", testsDir, resource))
+				if err != nil {
+					logrus.Errorf("Error while loading resource %s in test %s", resource, singleTest.Name)
+					logrus.Debug(err)
+					continue
+				}
+				singleTest.ObjectsList = append(singleTest.ObjectsList, objects...)
+			}
+			tests = append(tests, singleTest)
+		}
 	}
 
 	logrus.Debugln("Loaded tests: ", tests)

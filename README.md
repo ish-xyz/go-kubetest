@@ -15,7 +15,8 @@ With go-kubetest, integration tests can be created with one or multiple YAML fil
 test-1.yaml:
 
 - name: namespace_creation
-  manifest: ./manifests/test-1/namespace.yaml
+  resources:
+  - ./manifests/test-1/namespace.yaml
   setup:
     waitFor:
     - resource: v1/Namespace/namespace-1
