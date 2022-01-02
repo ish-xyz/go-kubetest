@@ -3,12 +3,12 @@ kind: TestResource
 metadata:
   name: namespaces
 spec:
-  - data: |
-      apiVersion: v1
-      kind: Namespace
-      metadata:
-        labels:
-          myCustomLabel: myCustomValue
-        name: namespace-1
-      spec: {}
-      status: {}
+  data: |
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      labels:
+        myCustomLabel: myCustomValue
+      name: namespace-1
+    spec: {}
+    status: {}

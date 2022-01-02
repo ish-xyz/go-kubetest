@@ -12,8 +12,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/serializer/yaml"
 )
 
-const YAMLDelimiter = "---"
-
 // Return a new Loader instance
 func NewFileSystemLoader() *FileSystemLoader {
 	return &FileSystemLoader{}

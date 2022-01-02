@@ -5,6 +5,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+const YAMLDelimiter = "---"
+
 // Interfaces
 type Loader interface {
 	LoadManifests(string) ([]*unstructured.Unstructured, error)
