@@ -92,9 +92,7 @@ func (c *Controller) WaitForCreation(resources []loader.WaitFor) bool {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
-				gvkData["version"],
-				gvkData["kind"],
-				gvkData["namespace"],
+				gvkData,
 				map[string]interface{}{
 					"metadata.name": gvkData["name"],
 				},
@@ -131,9 +129,7 @@ func (c *Controller) WaitForDeletion(resources []loader.WaitFor) bool {
 
 			obj, _ := c.Provisioner.ListWithSelectors(
 				context.TODO(),
-				gvkData["version"],
-				gvkData["kind"],
-				gvkData["namespace"],
+				gvkData,
 				map[string]interface{}{
 					"metadata.name": gvkData["name"],
 				},

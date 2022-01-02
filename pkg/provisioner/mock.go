@@ -18,9 +18,9 @@ func (_m *ProvisionerMock) Delete(ctx context.Context, object *unstructured.Unst
 
 func (_m *ProvisionerMock) ListWithSelectors(
 	ctx context.Context,
-	apiVersion, kind, namespace string,
+	objData map[string]string,
 	selectors map[string]interface{}) (*unstructured.UnstructuredList, error) {
 
-	args := _m.Called(ctx, apiVersion, kind, namespace, selectors)
+	args := _m.Called(ctx, objData, selectors)
 	return args.Get(0).(*unstructured.UnstructuredList), args.Error(1)
 }

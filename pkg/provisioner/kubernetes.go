@@ -132,16 +132,15 @@ func (k *Kubernetes) Delete(ctx context.Context, obj *unstructured.Unstructured)
 }
 
 // List Resources dynamically in a Kubernetes cluster using fieldselectors
-func (k *Kubernetes) ListWithSelectors(
-	ctx context.Context,
-	apiVersion string,
-	kind string,
-	namespace string,
-	selectors map[string]interface{}) (*unstructured.UnstructuredList, error) {
+func (k *Kubernetes) ListWithSelectors(ctx context.Context, objData map[string]string, selectors map[string]interface{}) (*unstructured.UnstructuredList, error) {
 
 	var labelSelector string
 	var fieldSelector string
 	var dr dynamic.ResourceInterface
+
+	apiVersion := objData["apiVersion"]
+	kind := objData["kind"]
+	namespace := objData["namespace"]
 
 	// Init discovery client and mapper
 	dc, err := discovery.NewDiscoveryClientForConfig(k.Config)

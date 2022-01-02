@@ -12,9 +12,9 @@ import (
 
 // Interfaces
 type Provisioner interface {
-	CreateOrUpdate(ctx context.Context, object *unstructured.Unstructured) error
-	Delete(ctx context.Context, object *unstructured.Unstructured) error
-	ListWithSelectors(ctx context.Context, apiVersion, kind, namespace string, selectors map[string]interface{}) (*unstructured.UnstructuredList, error)
+	CreateOrUpdate(context.Context, *unstructured.Unstructured) error
+	Delete(context.Context, *unstructured.Unstructured) error
+	ListWithSelectors(context.Context, map[string]string, map[string]interface{}) (*unstructured.UnstructuredList, error)
 }
 
 // Provisioners

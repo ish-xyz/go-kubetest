@@ -55,9 +55,11 @@ func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) 
 
 	objects, err := prv.ListWithSelectors(
 		context.TODO(),
-		assertion.ApiVersion,
-		assertion.Kind,
-		assertion.Namespace,
+		map[string]string{
+			"apiVersion": assertion.ApiVersion,
+			"kind":       assertion.Kind,
+			"namespace":  assertion.Namespace,
+		},
 		assertion.Selectors,
 	)
 	if err != nil {

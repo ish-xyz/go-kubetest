@@ -1,13 +1,14 @@
 package loader
 
 import (
+	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
 // Interfaces
 type Loader interface {
-	LoadManifests(filepath string) ([]*unstructured.Unstructured, error)
-	LoadTests(testsDir string) ([]*TestDefinition, error)
+	LoadManifests(string) ([]*unstructured.Unstructured, error)
+	LoadTests(string) ([]*TestDefinition, error)
 }
 
 // Data
@@ -50,4 +51,6 @@ type Assertion struct {
 // Loaders
 type FileSystemLoader struct{}
 
-type KubernetesLoader struct{}
+type KubernetesLoader struct {
+	Provisioner provisioner.Provisioner
+}

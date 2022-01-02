@@ -55,7 +55,7 @@ func TestSetup(t *testing.T) {
 	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(nil)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	errors := ctrl.Setup(objects)
 
 	assert.Len(t, errors, 0)
@@ -80,7 +80,7 @@ func TestSetupWithErrors(t *testing.T) {
 	)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	errors := ctrl.Setup(objects)
 
 	assert.Len(t, errors, 1)
@@ -103,7 +103,7 @@ func TestTeardown(t *testing.T) {
 	prvMock.On(testedMethod, context.TODO(), objects[0]).Return(nil)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	errors := ctrl.Teardown(objects)
 
 	assert.Len(t, errors, 0)
@@ -128,7 +128,7 @@ func TestTeardownWithErrors(t *testing.T) {
 	)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	errors := ctrl.Teardown(objects)
 
 	assert.Len(t, errors, 1)
@@ -151,15 +151,13 @@ func TestWaitForDeletion(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		"v1",
-		"Namespace",
-		"",
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, nil)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	result := ctrl.WaitForDeletion(resources)
 
 	assert.True(t, result)
@@ -192,15 +190,13 @@ func TestWaitForCreation(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		"v1",
-		"Namespace",
-		"",
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, nil)
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	result := ctrl.WaitForCreation(resources)
 
 	assert.True(t, result)
@@ -233,15 +229,13 @@ func TestWaitForDeletionErrors(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		"v1",
-		"Namespace",
-		"",
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, errors.New("error retrieving object"))
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	result := ctrl.WaitForDeletion(resources)
 
 	assert.False(t, result)
@@ -266,15 +260,13 @@ func TestWaitForCreationErrors(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		"v1",
-		"Namespace",
-		"",
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, errors.New("error retrieving object"))
 
 	// Run tests
-	ctrl := NewController(prvMock, nil, nil)
+	ctrl := NewController(nil, prvMock, nil, nil)
 	result := ctrl.WaitForCreation(resources)
 
 	assert.False(t, result)

@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -87,7 +88,10 @@ func exec(cmd *cobra.Command, args []string) {
 	prv := provisioner.NewProvisioner(restConfig, client, dynclient)
 	asrt := assert.NewAssert(prv)
 	ldr := loader.NewFileSystemLoader()
-
+	ldr2 := loader.NewKubernetesLoader(prv)
+	fmt.Println("----here----")
+	ldr2.LoadTests("default")
+	fmt.Println("----here----")
 	ms := metrics.NewServer(address, port)
 	controllerInstance := controller.NewController(ldr, prv, ms, asrt)
 	controllerInstance.Run(testsdir, time.Duration(interval)*time.Second)

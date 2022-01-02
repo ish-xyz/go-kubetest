@@ -1,6 +1,7 @@
+- Improve context management
 - Kubernetes provisioner: cleanup repeated code
-- Prepare all CRDs
-- Loader: load tests from CRDS instead of filesystem
+- Prepare all CRDs (TestDefinition, TestResource, TestResult)
+    - Loader: load tests from CRDS instead of filesystem
 - Publish test results as crds
 - Prepare Dockerfile & Chart
 - YAMLs validation (https://github.com/dealancer/validate)
