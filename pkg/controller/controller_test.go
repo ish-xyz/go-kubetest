@@ -11,6 +11,8 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 )
 
+var ctxTest = context.TODO()
+
 func TestGetResourceDataFromPath(t *testing.T) {
 
 	gvkData, err := getResourceDataFromPath("v1/Namespace/namespace-1")
@@ -56,7 +58,7 @@ func TestSetup(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	errors := ctrl.Setup(objects)
+	errors := ctrl.Setup(ctxTest, objects)
 
 	assert.Len(t, errors, 0)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -81,7 +83,7 @@ func TestSetupWithErrors(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	errors := ctrl.Setup(objects)
+	errors := ctrl.Setup(ctxTest, objects)
 
 	assert.Len(t, errors, 1)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -104,7 +106,7 @@ func TestTeardown(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	errors := ctrl.Teardown(objects)
+	errors := ctrl.Teardown(ctxTest, objects)
 
 	assert.Len(t, errors, 0)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -129,7 +131,7 @@ func TestTeardownWithErrors(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	errors := ctrl.Teardown(objects)
+	errors := ctrl.Teardown(ctxTest, objects)
 
 	assert.Len(t, errors, 1)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -158,7 +160,7 @@ func TestWaitForDeletion(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	result := ctrl.WaitForDeletion(resources)
+	result := ctrl.WaitForDeletion(ctxTest, resources)
 
 	assert.True(t, result)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -197,7 +199,7 @@ func TestWaitForCreation(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	result := ctrl.WaitForCreation(resources)
+	result := ctrl.WaitForCreation(ctxTest, resources)
 
 	assert.True(t, result)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 1)
@@ -236,7 +238,7 @@ func TestWaitForDeletionErrors(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	result := ctrl.WaitForDeletion(resources)
+	result := ctrl.WaitForDeletion(ctxTest, resources)
 
 	assert.False(t, result)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 2)
@@ -267,7 +269,7 @@ func TestWaitForCreationErrors(t *testing.T) {
 
 	// Run tests
 	ctrl := NewController(nil, prvMock, nil, nil)
-	result := ctrl.WaitForCreation(resources)
+	result := ctrl.WaitForCreation(ctxTest, resources)
 
 	assert.False(t, result)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 2)

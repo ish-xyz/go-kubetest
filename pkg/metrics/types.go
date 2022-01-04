@@ -7,6 +7,7 @@ type Metrics struct {
 	TotalTests       prometheus.Gauge
 	TotalTestsPassed prometheus.Gauge
 	TotalTestsFailed prometheus.Gauge
+	AssertionStatus  *prometheus.GaugeVec
 }
 
 type MetricsValues struct {
@@ -14,6 +15,7 @@ type MetricsValues struct {
 	TotalTests       float64
 	TotalTestsPassed float64
 	TotalTestsFailed float64
+	AssertionStatus  map[string]float64
 }
 
 type Server struct {

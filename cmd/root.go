@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"strconv"
 	"strings"
 	"time"
@@ -20,11 +21,12 @@ import (
 
 var (
 	// Used for flags
-	testsdir       string // required flag
+	location       string // required flag
 	kubeconfig     string
 	metricsAddress string
 	interval       int
 	debug          bool
+	filesystem     bool
 
 	rootCmd = &cobra.Command{
 		Use:   "kubetest",
@@ -41,13 +43,13 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&testsdir, "testsdir", "", "The directory with tests definitions")
+	rootCmd.PersistentFlags().StringVar(&location, "location", "", "The location where the tests definitions are (namespace or directory)")
 	rootCmd.PersistentFlags().StringVar(&metricsAddress, "metrics-address", "0.0.0.0:9000", "Run the controller in debug mode")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
-
-	rootCmd.MarkPersistentFlagRequired("testsdir")
+	rootCmd.PersistentFlags().BoolVar(&filesystem, "from-filesystem", false, "Wheter to load the tests definitions from filesystem or from the Kubernetes API")
+	rootCmd.MarkPersistentFlagRequired("location")
 }
 
 func handleErr(err error) {
@@ -60,6 +62,7 @@ func exec(cmd *cobra.Command, args []string) {
 
 	var restConfig *rest.Config
 	var err error
+	var ldr loader.Loader
 
 	// preliminary checks
 	if debug {
@@ -86,10 +89,14 @@ func exec(cmd *cobra.Command, args []string) {
 	// initiate objects
 	prv := provisioner.NewProvisioner(restConfig, client, dynclient)
 	asrt := assert.NewAssert(prv)
-	//ldr := loader.NewFileSystemLoader()
-	ldr2 := loader.NewKubernetesLoader(prv)
+
+	ldr = loader.NewKubernetesLoader(prv)
+	if filesystem {
+		ldr = loader.NewFileSystemLoader()
+	}
+
 	ms := metrics.NewServer(address, port)
-	controllerInstance := controller.NewController(ldr2, prv, ms, asrt)
-	controllerInstance.Run(testsdir, time.Duration(interval)*time.Second)
+	controllerInstance := controller.NewController(ldr, prv, ms, asrt)
+	controllerInstance.Run(context.TODO(), location, time.Duration(interval)*time.Second)
 
 }

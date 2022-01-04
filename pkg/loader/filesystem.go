@@ -62,15 +62,16 @@ func (ldr *FileSystemLoader) LoadTests(testsDir string) ([]*TestDefinition, erro
 		test := make([]*TestDefinition, 10)
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			logrus.Errorf("Failed to load test file %s", file)
+			logrus.Warningf("Failed to load test file %s", file)
 			logrus.Debug(err)
 			continue
 		}
 
 		err = stdyaml.Unmarshal(data, &test)
 		if err != nil {
-			logrus.Errorf("Error while during yaml unmarshal for file %s", file)
+			logrus.Warningf("Error while during yaml unmarshal for file %s", file)
 			logrus.Debug(err)
+			continue
 		}
 
 		// Load the linked manifest
@@ -79,7 +80,7 @@ func (ldr *FileSystemLoader) LoadTests(testsDir string) ([]*TestDefinition, erro
 			for _, resource := range singleTest.Resources {
 				objects, err := ldr.LoadManifests(fmt.Sprintf("%s/%s", testsDir, resource))
 				if err != nil {
-					logrus.Errorf("Error while loading resource %s in test %s", resource, singleTest.Name)
+					logrus.Warningf("Error while loading resource %s in test %s", resource, singleTest.Name)
 					logrus.Debug(err)
 					continue
 				}

@@ -15,6 +15,7 @@ func NewMetricsValues() *MetricsValues {
 		TotalTests:       0,
 		TotalTestsPassed: 0,
 		TotalTestsFailed: 0,
+		AssertionStatus:  map[string]float64{},
 	}
 }
 
@@ -29,6 +30,15 @@ func NewServer(address string, port int) *Server {
 				prometheus.GaugeOpts{
 					Name: "kubetest_test_status",
 					Help: "A 0/1 metrics to indicate if a given integration tests has passed or failed",
+				},
+				[]string{
+					"name",
+				},
+			),
+			AssertionStatus: promauto.NewGaugeVec(
+				prometheus.GaugeOpts{
+					Name: "kubetest_assertion_status",
+					Help: "A 0/1 metrics to indicate if a given assertion has passed or failed",
 				},
 				[]string{
 					"name",
@@ -61,4 +71,39 @@ func (s *Server) Serve() {
 	http.Handle("/metrics", promhttp.Handler())
 	http.ListenAndServe(fmt.Sprintf("%s:%d", s.Address, s.Port), nil)
 
+}
+
+func (mv *MetricsValues) Store(testName string, result bool, assertionResults map[string]bool) {
+
+	set := func(result bool) float64 {
+		if result {
+			return 1
+		} else {
+			return 0
+		}
+	}
+
+	for key, val := range assertionResults {
+		mv.AssertionStatus[key] = set(val)
+	}
+
+	mv.TotalTestsFailed += set(!result)
+	mv.TotalTestsPassed += set(result)
+	mv.TestStatus[testName] = set(result)
+	mv.TotalTests += 1
+}
+
+func (mv *MetricsValues) Publish(ms *Server) {
+
+	for key, value := range mv.TestStatus {
+		ms.Metrics.TestStatus.WithLabelValues(key).Set(value)
+	}
+
+	for key, value := range mv.AssertionStatus {
+		ms.Metrics.AssertionStatus.WithLabelValues(key).Set(value)
+	}
+
+	ms.Metrics.TotalTestsFailed.Set(mv.TotalTestsFailed)
+	ms.Metrics.TotalTestsPassed.Set(mv.TotalTestsPassed)
+	ms.Metrics.TotalTests.Set(mv.TotalTests)
 }

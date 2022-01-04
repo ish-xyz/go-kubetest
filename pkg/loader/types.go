@@ -41,13 +41,14 @@ type WaitFor struct {
 }
 
 type Assertion struct {
-	Type       string                 `yaml:"type" json:"type"`
-	ApiVersion string                 `yaml:"apiVersion" json:"apiVersion"`
-	Kind       string                 `yaml:"kind" json:"kind"`
-	Namespace  string                 `yaml:"namespace" json:"namespace"`
-	Selectors  map[string]interface{} `yaml:"selectors" json:"selectors"`
-	Count      int                    `yaml:"count" json:"count"`
-	Errors     []string               `yaml:"expectedErrors" json:"expectedErrors"`
+	Name      string                 `yaml:"name" json:"name"`
+	Type      string                 `yaml:"type" json:"type"`
+	Resource  string                 `yaml:"resource" json:"resource"`
+	Timeout   string                 `yaml:"timeout" json:"timeout"`
+	Namespace string                 `yaml:"namespace" json:"namespace"`
+	Selectors map[string]interface{} `yaml:"selectors" json:"selectors"`
+	Count     int                    `yaml:"count" json:"count"`
+	Errors    []string               `yaml:"errors" json:"errors"`
 }
 
 // Loaders

@@ -1,35 +1,22 @@
 - name: namespace_creation
   resources:
   - ./manifests/namespace-1.yaml
-  - ./manifests/namespace-2.yaml
   setup:
     waitFor:
     - resource: v1/Namespace/namespace-1
-      timeout: 120s
-    - resource: v1/Namespace/namespace-2
       timeout: 120s
   assert:
   - type: expectedErrors
     errors: []
   - type: expectedResources
-    apiVersion: v1
-    kind: Namespace
+    resource: v1/Namespace
+    timeout: 120s
     count: 1
     selectors:
       metadata.name: namespace-1
       status.phase: Active
       metadata.labels.myCustomLabel: myCustomValue
-  - type: expectedResources
-    apiVersion: v1
-    kind: Namespace
-    count: 1
-    selectors:
-      metadata.name: namespace-2
-      status.phase: Active
-      metadata.labels.myCustomLabel: myCustomValue
   teardown:
     waitFor:
     - resource: v1/Namespace/namespace-1
-      timeout: 120s
-    - resource: v1/Namespace/namespace-2
       timeout: 120s

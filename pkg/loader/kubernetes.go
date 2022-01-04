@@ -24,8 +24,8 @@ func (ldr *KubernetesLoader) LoadManifests(resourcePath string) ([]*unstructured
 
 	var objects []*unstructured.Unstructured
 
-	namespace := strings.Split(":", resourcePath)[0]
-	name := strings.Split(":", resourcePath)[1]
+	namespace := strings.Split(resourcePath, ":")[0]
+	name := strings.Split(resourcePath, ":")[1]
 
 	testResources, err := ldr.Provisioner.ListWithSelectors(
 		context.TODO(),
@@ -40,7 +40,8 @@ func (ldr *KubernetesLoader) LoadManifests(resourcePath string) ([]*unstructured
 	)
 	if err != nil {
 		return nil, err
-	} else if len(testResources.Items) < 1 {
+	}
+	if len(testResources.Items) < 1 {
 		return nil, fmt.Errorf("no resource with name %s", name)
 	}
 
@@ -52,7 +53,7 @@ func (ldr *KubernetesLoader) LoadManifests(resourcePath string) ([]*unstructured
 		unstructObject := &unstructured.Unstructured{}
 		_, _, err = decUnstructured.Decode([]byte(manifest), nil, unstructObject)
 		if err != nil {
-			logrus.Debugln(err)
+			logrus.Warningln(err)
 			return nil, err
 		}
 
@@ -72,14 +73,12 @@ func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, err
 			"kind":       "TestDefinition",
 			"namespace":  namespace,
 		},
-		map[string]interface{}{
-			"metadata.name": "my-test-definition",
-		},
+		map[string]interface{}{},
 	)
-	fmt.Println(testDefinitions)
 	if err != nil {
 		return nil, err
-	} else if len(testDefinitions.Items) < 1 {
+	}
+	if len(testDefinitions.Items) < 1 {
 		return nil, fmt.Errorf("can't retrieve any tests from the Kubernetes API")
 	}
 

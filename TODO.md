@@ -1,5 +1,3 @@
-- Improve context management
-- Add metrics for assertions
 - Kubernetes provisioner: cleanup repeated code
 - Prepare all CRDs (TestDefinition, TestResource, TestResult)
     - Loader: load tests from CRDS instead of filesystem

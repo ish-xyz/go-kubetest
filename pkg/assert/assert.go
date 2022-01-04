@@ -6,6 +6,7 @@ import (
 
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
+	"github.com/sirupsen/logrus"
 )
 
 func NewAssert(prv provisioner.Provisioner) *Assert {
@@ -14,9 +15,10 @@ func NewAssert(prv provisioner.Provisioner) *Assert {
 	}
 }
 
-func (a *Assert) Run(test *loader.TestDefinition, errors []string) bool {
+func (a *Assert) Run(test *loader.TestDefinition, errors []string) (bool, map[string]bool) {
 
 	testResult := true
+	assertResults := map[string]bool{}
 	for _, assertion := range test.Assert {
 		var assertRes bool
 
@@ -30,8 +32,12 @@ func (a *Assert) Run(test *loader.TestDefinition, errors []string) bool {
 		if !assertRes {
 			testResult = false
 		}
+
+		assertResults[assertion.Name] = assertRes
 	}
-	return testResult
+
+	// TODO return bool []map[string]bool
+	return testResult, assertResults
 }
 
 // Check if the errors throwed during setup are expected or not
@@ -53,21 +59,32 @@ func expectedErrors(expErrors, actErrors []string) bool {
 // Check if the retrieved objects match the expected count
 func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) bool {
 
-	objects, err := prv.ListWithSelectors(
-		context.TODO(),
-		map[string]string{
-			"apiVersion": assertion.ApiVersion,
-			"kind":       assertion.Kind,
-			"namespace":  assertion.Namespace,
-		},
-		assertion.Selectors,
-	)
-	if err != nil {
-		return false
-	}
-	if len(objects.Items) != assertion.Count {
-		return false
+	apiVersion, kind, namespace := unpackResource(assertion.Resource)
+	limit := getMaxRetries(assertion.Timeout, 2)
+	passed := false
+
+	for x := 0; x < limit; x++ {
+
+		objects, err := prv.ListWithSelectors(
+			context.TODO(),
+			map[string]string{
+				"apiVersion": apiVersion,
+				"kind":       kind,
+				"namespace":  namespace,
+			},
+			assertion.Selectors,
+		)
+		if err != nil {
+			logrus.Debugln(err)
+			continue
+		}
+		if len(objects.Items) != assertion.Count {
+			logrus.Debugln(err)
+			continue
+		}
+		passed = true
+		break
 	}
 
-	return true
+	return passed
 }
