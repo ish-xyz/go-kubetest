@@ -10,7 +10,7 @@ const YAMLDelimiter = "---"
 // Interfaces
 type Loader interface {
 	LoadManifests(string) ([]*unstructured.Unstructured, error)
-	LoadTests(string) ([]*TestDefinition, error)
+	LoadTests(string, map[string]interface{}) ([]*TestDefinition, error)
 }
 
 // Data

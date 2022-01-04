@@ -1,3 +1,4 @@
+- Run once system, no setup/teardown
 - Kubernetes provisioner: cleanup repeated code
 - Tests results as CRD
 - Prepare Dockerfile & Chart

@@ -21,12 +21,13 @@ import (
 
 var (
 	// Used for flags
-	location       string // required flag
+	namespace      string // required flag
 	kubeconfig     string
 	metricsAddress string
 	interval       int
 	debug          bool
-	filesystem     bool
+	once           bool
+	selectors      map[string]string
 
 	rootCmd = &cobra.Command{
 		Use:   "kubetest",
@@ -43,13 +44,14 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&location, "location", "", "The location where the tests definitions are (namespace or directory)")
+	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "", "The location where the tests definitions are (namespace or directory)")
 	rootCmd.PersistentFlags().StringVar(&metricsAddress, "metrics-address", "0.0.0.0:9000", "Run the controller in debug mode")
 	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
 	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
-	rootCmd.PersistentFlags().BoolVar(&filesystem, "from-filesystem", false, "Wheter to load the tests definitions from filesystem or from the Kubernetes API")
-	rootCmd.MarkPersistentFlagRequired("location")
+	rootCmd.PersistentFlags().BoolVar(&once, "once", false, "Run controller only once")
+	rootCmd.PersistentFlags().StringToStringVar(&selectors, "selectors", map[string]string{}, "Pass selectors for test definitions")
+	rootCmd.MarkPersistentFlagRequired("namespace")
 }
 
 func handleErr(err error) {
@@ -91,12 +93,15 @@ func exec(cmd *cobra.Command, args []string) {
 	asrt := assert.NewAssert(prv)
 
 	ldr = loader.NewKubernetesLoader(prv)
-	if filesystem {
-		ldr = loader.NewFileSystemLoader()
-	}
-
 	ms := metrics.NewServer(address, port)
 	controllerInstance := controller.NewController(ldr, prv, ms, asrt)
-	controllerInstance.Run(context.TODO(), location, time.Duration(interval)*time.Second)
 
+	// Prepare selectors
+	sl := make(map[string]interface{}, len(selectors))
+	for k, v := range selectors {
+		sl[k] = v
+	}
+
+	// Start controller
+	controllerInstance.Run(context.TODO(), namespace, sl, time.Duration(interval)*time.Second, false)
 }

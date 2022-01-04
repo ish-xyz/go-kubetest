@@ -28,12 +28,18 @@ func NewController(ldr loader.Loader, prv provisioner.Provisioner, ms *metrics.S
 }
 
 // Start controller for periodically tests executions
-func (c *Controller) Run(ctx context.Context, testsdir string, wait time.Duration) {
+func (c *Controller) Run(
+	ctx context.Context,
+	namespace string,
+	selectors map[string]interface{},
+	wait time.Duration,
+	once bool,
+) error {
 
-	testsList, err := c.Loader.LoadTests(testsdir)
+	testsList, err := c.Loader.LoadTests(namespace, selectors)
 	if err != nil {
 		logrus.Fatal(err)
-		return
+		return err
 	}
 
 	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
@@ -69,6 +75,9 @@ func (c *Controller) Run(ctx context.Context, testsdir string, wait time.Duratio
 		metricsValues.Publish(c.MetricsServer)
 
 		logrus.Infof("Waiting for next execution (%s)", wait)
+		if once {
+			return nil
+		}
 		time.Sleep(wait)
 	}
 }

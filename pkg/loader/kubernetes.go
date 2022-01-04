@@ -64,7 +64,7 @@ func (ldr *KubernetesLoader) LoadManifests(resourcePath string) ([]*unstructured
 }
 
 // Load TestDefinition resources for a given namespace
-func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, error) {
+func (ldr *KubernetesLoader) LoadTests(namespace string, selectors map[string]interface{}) ([]*TestDefinition, error) {
 	var tests []*TestDefinition
 	testDefinitions, err := ldr.Provisioner.ListWithSelectors(
 		context.TODO(),
@@ -73,7 +73,7 @@ func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, err
 			"kind":       "TestDefinition",
 			"namespace":  namespace,
 		},
-		map[string]interface{}{},
+		selectors,
 	)
 	if err != nil {
 		return nil, err
