@@ -12,6 +12,7 @@ Kubetest runs in cluster as a controller, executes integration tests periodicall
 With go-kubetest, integration tests can be created with one or multiple Kubernetes Resources. Let's take in consideration a test that tells us if we can or cannot create namespaces into a given Kubernetes cluster.
 
 <br>
+
 **Test Resource:**
 
 ```
@@ -112,41 +113,6 @@ Kubetest run as a controller and exposes 4 simple metrics about the integration 
 
 For some other practical examples see the `examples` folder.<br/>
 
-## Step by step tutorial (outdated)
+## Step by step tutorial (TODO)
 
-1. Run the following commands:<br/>
-```
-mkdir -p testsdir/manifests
-touch testsdir/test-1.yaml
-```
-
-2. Edit the file `testsdir/test-1.yaml` with:<br/>
-```
-- name: namespace_creation
-  manifest: ./manifests/test-1.yaml
-  setup:
-    waitFor:
-    - resource: v1/Namespace/namespace-1
-      timeout: 15s
-  assert:
-  - type: expectedResources
-    apiVersion: v1
-    kind: Namespace
-    count: 1
-    selectors:
-      metadata.name: namespace-1
-      status.phase: Active
-      metadata.labels.myCustomLabel: myCustomValue
-  - type: expectedErrors
-    errors: []
-  teardown:
-    waitFor:
-    - resource: v1/Namespace/namespace-1
-      timeout: 10s
-```
-
-3. Download go-kubetest and test it locally against your Kubernetes cluster:<br/>
-
-```
-./go-kubetest --kubeconfig ~/.kube/config --testsdir examples --interval 60 --debug
-```
+...
