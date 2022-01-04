@@ -28,7 +28,7 @@ func NewController(ldr loader.Loader, prv provisioner.Provisioner, ms *metrics.S
 }
 
 // Start controller for periodically tests executions
-func (c *Controller) Run(
+func (ctrl *Controller) Run(
 	ctx context.Context,
 	namespace string,
 	selectors map[string]interface{},
@@ -36,14 +36,16 @@ func (c *Controller) Run(
 	once bool,
 ) error {
 
-	testsList, err := c.Loader.LoadTests(namespace, selectors)
+	testsList, err := ctrl.Loader.LoadTests(namespace, selectors)
 	if err != nil {
 		logrus.Fatal(err)
 		return err
 	}
 
-	logrus.Infof("Starting metrics server at :%d", c.MetricsServer.Port)
-	go c.MetricsServer.Serve()
+	if !once {
+		logrus.Infof("Starting metrics server at :%d", ctrl.MetricsServer.Port)
+		go ctrl.MetricsServer.Serve()
+	}
 
 	logrus.Info("Starting controller")
 	for {
@@ -52,38 +54,44 @@ func (c *Controller) Run(
 			logrus.Infof("Running test: '%s'", test.Name)
 
 			// Create resources and wait for creation
-			errors := c.Setup(ctx, test.ObjectsList)
-			if !c.WaitForCreation(ctx, test.Setup.WaitFor) {
+			errors := ctrl.Setup(ctx, test.ObjectsList)
+			if !ctrl.WaitForCreation(ctx, test.Setup.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be created, skipping test '%s'", test.Name)
 				metricsValues.Store(test.Name, false, nil)
+				ctrl.CreateTestResult(ctx, test.Name, false, nil)
 				continue
 			}
 
-			// Run the actual tests
-			result, asrtRes := c.Assert.Run(test, errors)
+			// Run the actual tests and store results
+			result, asrtRes := ctrl.Assert.Run(test, errors)
 			metricsValues.Store(test.Name, result, asrtRes)
+			err = ctrl.CreateTestResult(ctx, test.Name, result, asrtRes)
+			if err != nil {
+				logrus.Warningln("error creating test results %v", err)
+			}
 
 			// Delete resources and wait for deletion
-			c.Teardown(ctx, test.ObjectsList)
-			if !c.WaitForDeletion(ctx, test.Teardown.WaitFor) {
+			ctrl.Teardown(ctx, test.ObjectsList)
+			if !ctrl.WaitForDeletion(ctx, test.Teardown.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be deleted, test: '%s'", test.Name)
 				continue
 			}
 		}
 
 		logrus.Debug("Push new metrics to server")
-		metricsValues.Publish(c.MetricsServer)
+		metricsValues.Publish(ctrl.MetricsServer)
 
-		logrus.Infof("Waiting for next execution (%s)", wait)
 		if once {
+			logrus.Infof("Tests finished, results have been created")
 			return nil
 		}
+		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
 	}
 }
 
 // WaitForCreation wait until a set of resources has been created
-func (c *Controller) WaitForCreation(ctx context.Context, resources []loader.WaitFor) bool {
+func (ctrl *Controller) WaitForCreation(ctx context.Context, resources []loader.WaitFor) bool {
 
 	for _, resource := range resources {
 
@@ -98,7 +106,7 @@ func (c *Controller) WaitForCreation(ctx context.Context, resources []loader.Wai
 		logrus.Debugf("Waiting for resource %s, retrying every %ds for %d times", resource.Resource, interval, limit)
 		for counter := 0; counter < limit; counter++ {
 
-			obj, _ := c.Provisioner.ListWithSelectors(
+			obj, _ := ctrl.Provisioner.ListWithSelectors(
 				ctx,
 				gvkData,
 				map[string]interface{}{
@@ -120,7 +128,7 @@ func (c *Controller) WaitForCreation(ctx context.Context, resources []loader.Wai
 }
 
 // WaitForDeletion wait until a set of resources has been deleted
-func (c *Controller) WaitForDeletion(ctx context.Context, resources []loader.WaitFor) bool {
+func (ctrl *Controller) WaitForDeletion(ctx context.Context, resources []loader.WaitFor) bool {
 
 	for _, resource := range resources {
 
@@ -135,7 +143,7 @@ func (c *Controller) WaitForDeletion(ctx context.Context, resources []loader.Wai
 		logrus.Debugf("Waiting for resource %s, retrying every %ds for %d times", resource.Resource, interval, limit)
 		for counter := 0; counter < limit; counter++ {
 
-			obj, _ := c.Provisioner.ListWithSelectors(
+			obj, _ := ctrl.Provisioner.ListWithSelectors(
 				ctx,
 				gvkData,
 				map[string]interface{}{
@@ -158,12 +166,12 @@ func (c *Controller) WaitForDeletion(ctx context.Context, resources []loader.Wai
 }
 
 // Create resources defined on manifests
-func (c *Controller) Setup(ctx context.Context, objects []*unstructured.Unstructured) []string {
+func (ctrl *Controller) Setup(ctx context.Context, objects []*unstructured.Unstructured) []string {
 
 	var errors []string
 
 	for _, obj := range objects {
-		err := c.Provisioner.CreateOrUpdate(ctx, obj)
+		err := ctrl.Provisioner.CreateOrUpdate(ctx, obj)
 		if err != nil {
 			logrus.Debugf("Couldn't create resource %s", obj.GetName())
 			logrus.Debugln(err)
@@ -177,7 +185,7 @@ func (c *Controller) Setup(ctx context.Context, objects []*unstructured.Unstruct
 }
 
 // Delete resources defined on manifests
-func (c *Controller) Teardown(ctx context.Context, objects []*unstructured.Unstructured) []string {
+func (ctrl *Controller) Teardown(ctx context.Context, objects []*unstructured.Unstructured) []string {
 
 	var errors []string
 
@@ -185,7 +193,7 @@ func (c *Controller) Teardown(ctx context.Context, objects []*unstructured.Unstr
 		// Teardown needs to delete the objects in the
 		// manifest, from the last one to the first one
 		obj := objects[len(objects)-1-index]
-		err := c.Provisioner.Delete(ctx, obj)
+		err := ctrl.Provisioner.Delete(ctx, obj)
 		if err != nil {
 			logrus.Debugf("Couldn't delete resource %s", obj.GetName())
 			logrus.Debugln(err)
@@ -195,6 +203,27 @@ func (c *Controller) Teardown(ctx context.Context, objects []*unstructured.Unstr
 		logrus.Debugf("Teardown: Resource deleted %s\n", obj.GetName())
 	}
 	return errors
+}
+
+// CreateTestResult resource
+func (ctrl *Controller) CreateTestResult(ctx context.Context, name string, result bool, asrtRes map[string]interface{}) error {
+
+	obj := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": "go-kubetest.io/v1",
+			"kind":       "TestResult",
+			"metadata": map[string]interface{}{
+				"name": name,
+			},
+			"spec": map[string]interface{}{
+				"result":     result,
+				"assertions": asrtRes,
+			},
+		},
+	}
+
+	err := ctrl.Provisioner.CreateOrUpdate(ctx, obj)
+	return err
 }
 
 func getResourceDataFromPath(resourcePath string) (map[string]string, error) {

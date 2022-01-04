@@ -73,7 +73,7 @@ func (s *Server) Serve() {
 
 }
 
-func (mv *MetricsValues) Store(testName string, result bool, assertionResults map[string]bool) {
+func (mv *MetricsValues) Store(testName string, result bool, assertionResults map[string]interface{}) {
 
 	set := func(result bool) float64 {
 		if result {
@@ -84,7 +84,7 @@ func (mv *MetricsValues) Store(testName string, result bool, assertionResults ma
 	}
 
 	for key, val := range assertionResults {
-		mv.AssertionStatus[key] = set(val)
+		mv.AssertionStatus[key] = set(val.(bool))
 	}
 
 	mv.TotalTestsFailed += set(!result)
@@ -101,6 +101,7 @@ func (mv *MetricsValues) Publish(ms *Server) {
 
 	for key, value := range mv.AssertionStatus {
 		ms.Metrics.AssertionStatus.WithLabelValues(key).Set(value)
+
 	}
 
 	ms.Metrics.TotalTestsFailed.Set(mv.TotalTestsFailed)

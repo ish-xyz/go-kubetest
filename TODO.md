@@ -1,7 +1,7 @@
-- Run once system, no setup/teardown
 - Kubernetes provisioner: cleanup repeated code
+- Test name in assertion metrics
 - Tests results as CRD
 - Prepare Dockerfile & Chart
 - Add unit tests everywhere (should have done that before I know :P)
 - Create more test examples
-- Complete README.md
+- Complete README.md with link to examples and tutorial

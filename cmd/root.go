@@ -103,5 +103,5 @@ func exec(cmd *cobra.Command, args []string) {
 	}
 
 	// Start controller
-	controllerInstance.Run(context.TODO(), namespace, sl, time.Duration(interval)*time.Second, false)
+	controllerInstance.Run(context.TODO(), namespace, sl, time.Duration(interval)*time.Second, once)
 }

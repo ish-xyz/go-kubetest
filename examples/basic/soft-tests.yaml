@@ -1,0 +1,34 @@
+apiVersion: go-kubetest.io/v1
+kind: TestDefinition
+metadata:
+  name: soft-tests
+  labels:
+    type: soft
+spec:
+  - name: ensure-resources-exist
+    resources: []
+    setup: {}
+    teardown: {}
+    assert:
+    - name: namespace
+      type: expectedResources
+      resource: v1:Namespace
+      timeout: 10s
+      count: 1
+      selectors:
+        status.phase: Active
+        metadata.name: myCustomNamespace
+    - name: deployment
+      type: expectedResources
+      resource: apps/v1:Deployment:nginx-controller
+      timeout: 10s
+      count: 1
+      selectors:
+        metadata.name: nginx-controller
+    - name: daemonset
+      type: expectedResources
+      resource: apps/v1:DaemonSet:kube-system
+      timeout: 10s
+      count: 1
+      selectors:
+        metadata.name: kube-proxy

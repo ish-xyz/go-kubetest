@@ -3,6 +3,7 @@ package assert
 import (
 	"context"
 	"regexp"
+	"time"
 
 	"github.com/ish-xyz/go-kubetest/pkg/loader"
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
@@ -15,10 +16,10 @@ func NewAssert(prv provisioner.Provisioner) *Assert {
 	}
 }
 
-func (a *Assert) Run(test *loader.TestDefinition, errors []string) (bool, map[string]bool) {
+func (a *Assert) Run(test *loader.TestDefinition, errors []string) (bool, map[string]interface{}) {
 
 	testResult := true
-	assertResults := map[string]bool{}
+	assertResults := map[string]interface{}{}
 	for _, assertion := range test.Assert {
 		var assertRes bool
 
@@ -60,8 +61,8 @@ func expectedErrors(expErrors, actErrors []string) bool {
 func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) bool {
 
 	apiVersion, kind, namespace := unpackResource(assertion.Resource)
-	limit := getMaxRetries(assertion.Timeout, 2)
-	passed := false
+	passed, interval := false, 2
+	limit := getMaxRetries(assertion.Timeout, interval)
 
 	for x := 0; x < limit; x++ {
 
@@ -74,14 +75,13 @@ func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) 
 			},
 			assertion.Selectors,
 		)
-		if err != nil {
+		if err != nil || len(objects.Items) != assertion.Count {
 			logrus.Debugln(err)
+			logrus.Debugln("retrying to fetch resources during assertion 'expectedErrors' ...")
+			time.Sleep(time.Duration(interval) * time.Second)
 			continue
 		}
-		if len(objects.Items) != assertion.Count {
-			logrus.Debugln(err)
-			continue
-		}
+
 		passed = true
 		break
 	}
