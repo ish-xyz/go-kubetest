@@ -1,9 +1,6 @@
 - Kubernetes provisioner: cleanup repeated code
-- Prepare all CRDs (TestDefinition, TestResource, TestResult)
-    - Loader: load tests from CRDS instead of filesystem
-- Publish test results as crds
+- Tests results as CRD
 - Prepare Dockerfile & Chart
-- YAMLs validation (https://github.com/dealancer/validate)
-- Add unit tests
+- Add unit tests everywhere (should have done that before I know :P)
 - Create more test examples
 - Complete README.md
