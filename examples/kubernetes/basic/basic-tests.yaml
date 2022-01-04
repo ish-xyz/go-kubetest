@@ -13,7 +13,7 @@ spec:
       - resource: v1:Namespace:namespace-2
         timeout: 120s
     assert:
-    - name: count_namespaces 
+    - name: count_namespaces
       type: expectedResources
       resource: v1:Namespace
       timeout: 120s

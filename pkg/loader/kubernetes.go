@@ -84,7 +84,7 @@ func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, err
 
 	for _, testDef := range testDefinitions.Items[0].Object["spec"].([]interface{}) {
 
-		testSpec, err := getManifestSpec(testDef)
+		testSpec, err := getTestDefinition(testDef)
 		if err != nil {
 			logrus.Warningf("Can't convert manifest.spec into TestDefinition")
 		}
@@ -105,7 +105,7 @@ func (ldr *KubernetesLoader) LoadTests(namespace string) ([]*TestDefinition, err
 	return tests, nil
 }
 
-func getManifestSpec(testDef interface{}) (*TestDefinition, error) {
+func getTestDefinition(testDef interface{}) (*TestDefinition, error) {
 
 	testDefStruct := &TestDefinition{}
 	uobj := unstructured.Unstructured{Object: testDef.(map[string]interface{})}

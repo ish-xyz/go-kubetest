@@ -15,10 +15,10 @@ var ctxTest = context.TODO()
 
 func TestGetResourceDataFromPath(t *testing.T) {
 
-	gvkData, err := getResourceDataFromPath("v1/Namespace/namespace-1")
+	gvkData, err := getResourceDataFromPath("v1:Namespace:namespace-1")
 
 	assert.Nil(t, err)
-	assert.Equal(t, gvkData["version"], "v1")
+	assert.Equal(t, gvkData["apiVersion"], "v1")
 	assert.Equal(t, gvkData["kind"], "Namespace")
 	assert.Equal(t, gvkData["namespace"], "")
 	assert.Equal(t, gvkData["name"], "namespace-1")
@@ -143,7 +143,7 @@ func TestWaitForDeletion(t *testing.T) {
 	testedMethod := "ListWithSelectors"
 	resources := make([]loader.WaitFor, 1)
 	resources[0] = loader.WaitFor{
-		Resource: "v1/Namespace/namespace-1",
+		Resource: "v1:Namespace:namespace-1",
 		Timeout:  "5s",
 	}
 	returnObject := &unstructured.UnstructuredList{
@@ -153,7 +153,7 @@ func TestWaitForDeletion(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "apiVersion": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, nil)
@@ -173,7 +173,7 @@ func TestWaitForCreation(t *testing.T) {
 	testedMethod := "ListWithSelectors"
 	resources := make([]loader.WaitFor, 1)
 	resources[0] = loader.WaitFor{
-		Resource: "v1/Namespace/namespace-1",
+		Resource: "v1:Namespace:namespace-1",
 		Timeout:  "5s",
 	}
 	returnObject := &unstructured.UnstructuredList{
@@ -192,7 +192,7 @@ func TestWaitForCreation(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "apiVersion": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, nil)
@@ -212,7 +212,7 @@ func TestWaitForDeletionErrors(t *testing.T) {
 	testedMethod := "ListWithSelectors"
 	resources := make([]loader.WaitFor, 1)
 	resources[0] = loader.WaitFor{
-		Resource: "v1/Namespace/namespace-1",
+		Resource: "v1:Namespace:namespace-1",
 		Timeout:  "5s",
 	}
 	returnObject := &unstructured.UnstructuredList{
@@ -231,7 +231,7 @@ func TestWaitForDeletionErrors(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "apiVersion": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, errors.New("error retrieving object"))
@@ -251,7 +251,7 @@ func TestWaitForCreationErrors(t *testing.T) {
 	testedMethod := "ListWithSelectors"
 	resources := make([]loader.WaitFor, 1)
 	resources[0] = loader.WaitFor{
-		Resource: "v1/Namespace/namespace-1",
+		Resource: "v1:Namespace:namespace-1",
 		Timeout:  "5s",
 	}
 	returnObject := &unstructured.UnstructuredList{
@@ -262,7 +262,7 @@ func TestWaitForCreationErrors(t *testing.T) {
 	prvMock.On(
 		testedMethod,
 		context.TODO(),
-		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "version": "v1"},
+		map[string]string{"kind": "Namespace", "name": "namespace-1", "namespace": "", "apiVersion": "v1"},
 		map[string]interface{}{
 			"metadata.name": "namespace-1",
 		}).Return(returnObject, errors.New("error retrieving object"))
