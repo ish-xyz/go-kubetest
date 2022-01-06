@@ -7,7 +7,6 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
@@ -70,8 +69,6 @@ func NewMetricsController(dc dynamic.Interface, address string, port int) *Metri
 }
 
 func (m *MetricsController) Run(namespace string) {
-
-	logrus.Infoln("Metrics server is starting.")
 
 	// Start metrics web server
 	http.Handle("/metrics", promhttp.Handler())
