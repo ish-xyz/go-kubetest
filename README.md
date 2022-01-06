@@ -1,46 +1,69 @@
 # go-kubetest: Kubernetes integration tests
 
+## Abstract
+
 ![go-kubetest logo](/assets/images/logo.png)
 
-A tool to run integrations tests on kubernetes, by defining simple YAML files.<br>
-Kubetest runs in cluster as a controller, executes integration tests periodically and exposes Prometheus metrics about itself and the tests results.
+Go-kubetest is a tool to run integrations tests on kubernetes clusters, by defining simple custom resources. Go-kubetest can run in 2 modes:
+
+As a controller and in-cluster solution, running tests periodically and providing metrics about the tests results.
+
+As a oneshot process to run tests against a given cluster.
+
+Go-kubetest comes with 3 CRDs: TestDefinition, TestResource and TestResult.
+
+A user could run `kubectl get testresults` and quickly see how many tests have failed or successed, or run `kubectl get tests` to see which tests have been defined and deployed into a given namespace/cluster.
+
+Go-kubetest is intended to be used to run integration tests or behaviour testing on Kubernetes only.
+
 <br>
 <br>
 
-## Intro
+### Test Definition
 
-With go-kubetest, integration tests can be created with one or multiple Kubernetes Resources. Let's take in consideration a test that tells us if we can or cannot create namespaces into a given Kubernetes cluster.
+As mentioned above TestDefinition is a CRD. It has 3 required "fields": setup, teardown, assert. Although, the fields are required, there's no requirement in the fields content. Let me explain this point with an example.
 
-<br>
-
-**Test Resource:**
+The following is a TestDefinition that **only** ensures that a set of resources are present within a Kubernetes cluster:
 
 ```
 apiVersion: go-kubetest.io/v1
-kind: TestResource
+kind: TestDefinition
 metadata:
-  name: namespaces
+  name: soft-tests
+  labels:
+    type: soft
 spec:
-  data: |
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      labels:
-        myCustomLabel: myCustomValue
-      name: namespace-1
-    spec: {}
-    ---
-    apiVersion: v1
-    kind: Namespace
-    metadata:
-      labels:
-        myCustomLabel: myCustomValue
-      name: namespace-2
-    spec: {}
+  - name: ensure-resources-exist
+    resources: []
+    setup: {}
+    teardown: {}
+    assert:
+    - name: namespace
+      type: expectedResources
+      resource: v1:Namespace
+      timeout: 10s
+      count: 1
+      selectors:
+        status.phase: Active
+        metadata.name: myCustomNamespace
+    - name: deployment
+      type: expectedResources
+      resource: apps/v1:Deployment:nginx-controller
+      timeout: 10s
+      count: 1
+      selectors:
+        metadata.name: nginx-controller
+    - name: daemonset
+      type: expectedResources
+      resource: apps/v1:DaemonSet:kube-system
+      timeout: 10s
+      count: 1
+      selectors:
+        metadata.name: kube-proxy
 ```
-<br>
+As you can see in the above spec **setup** and **teardown** are defined as empty dicts, this means that if we run the go-kubetest controller, it won't create or delete any resource from the cluster, it will just ensure that the ones defined in the **assert** field exist.
 
-**Test Definition:**
+Let's take in consideration another example:
 
 ```
 apiVersion: go-kubetest.io/v1
@@ -73,29 +96,46 @@ spec:
       - resource: v1:Namespace:namespace-2
         timeout: 30s
 ```
-<br>
+
+....
 
 
-In the above example the controller will try to create the resources within TestResource `namespaces` defined above, and wait for the resources specified in `setup.waitFor` for maximum `30s`.
-
-At the moment the controller uses only 2 type of assertions.
-
-The first one, "expectedResources", will try to retrieve one or more Kubernetes resources with the specified selectors (fieldSelectors and labelSelectors) and compare the number of resources fetched from the Kubernetes API, with the number of expected resources specified in `count`.
-
-The second assertion, "expectedErrors", will count the number of errors during the creation of the resources specified in the `resources`, and compare it with the length of the array `errors`, if the number is the same it will check if the error/s match the regexes defined in the array of errors.
-
-For example if you are expecting an error that says:
-```
-{something something} ... you need to specify SecurityContext ... {something something}
-```
-when creating a pod without securityContext, your "expectedErrors" assertion could look like:
-```
-- type: "expectedErrors"
-  errors:
-  - '.*SecurityContext.*'
+### Test Resource:
 
 ```
-So the controller will match 1 error with array length 1, and the regex in the element one of the array `errors` with the content of the error.
+apiVersion: go-kubetest.io/v1
+kind: TestResource
+metadata:
+  name: namespaces
+spec:
+  data: |
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      labels:
+        myCustomLabel: myCustomValue
+      name: namespace-1
+    spec: {}
+    ---
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      labels:
+        myCustomLabel: myCustomValue
+      name: namespace-2
+    spec: {}
+```
+
+(TODO)
+
+### Test Result:
+
+(TODO)
+
+## Tutorial:
+(TODO)
+
+### Additional Options:
 
 ## Metrics
 
@@ -112,7 +152,3 @@ Kubetest run as a controller and exposes 4 simple metrics about the integration 
 
 
 For some other practical examples see the `examples` folder.<br/>
-
-## Step by step tutorial (TODO)
-
-...
