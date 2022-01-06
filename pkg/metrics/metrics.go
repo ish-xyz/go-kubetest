@@ -7,24 +7,26 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/sirupsen/logrus"
+	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
+	"k8s.io/apimachinery/pkg/runtime/schema"
+	"k8s.io/client-go/dynamic"
+	"k8s.io/client-go/dynamic/dynamicinformer"
+	"k8s.io/client-go/tools/cache"
 )
 
-func NewMetricsValues() *MetricsValues {
-	return &MetricsValues{
-		TestStatus:       map[string]float64{},
-		TotalTests:       0,
-		TotalTestsPassed: 0,
-		TotalTestsFailed: 0,
-		AssertionStatus:  map[string]float64{},
-	}
+var resource = schema.GroupVersionResource{
+	Group:    "go-kubetest.io",
+	Version:  "v1",
+	Resource: "testresults",
 }
 
-func NewServer(address string, port int) *Server {
-
-	return &Server{
-		Port:    port,
-		Address: address,
-		Path:    "/metrics",
+func NewMetricsController(dc dynamic.Interface, address string, port int) *MetricsController {
+	return &MetricsController{
+		DynClient: dc,
+		Port:      port,
+		Address:   address,
+		Path:      "/metrics",
 		Metrics: Metrics{
 			TestStatus: promauto.NewGaugeVec(
 				prometheus.GaugeOpts{
@@ -42,6 +44,7 @@ func NewServer(address string, port int) *Server {
 				},
 				[]string{
 					"name",
+					"assertion",
 				},
 			),
 			TotalTests: promauto.NewGauge(
@@ -66,45 +69,121 @@ func NewServer(address string, port int) *Server {
 	}
 }
 
-func (s *Server) Serve() {
+func (m *MetricsController) Run(namespace string) {
 
+	logrus.Infoln("Metrics server is starting.")
+
+	// Start metrics web server
 	http.Handle("/metrics", promhttp.Handler())
-	http.ListenAndServe(fmt.Sprintf("%s:%d", s.Address, s.Port), nil)
+	go http.ListenAndServe(fmt.Sprintf("%s:%d", m.Address, m.Port), nil)
+
+	// Init informer and run it
+	sharedInformerFactory := dynamicinformer.NewFilteredDynamicSharedInformerFactory(m.DynClient, 0, namespace, nil)
+	genericInformer := sharedInformerFactory.ForResource(resource)
+	stopCh := make(chan struct{})
+	defer close(stopCh)
+
+	sharedInformer := genericInformer.Informer()
+	handlers := cache.ResourceEventHandlerFuncs{
+		AddFunc: func(obj interface{}) {
+			m.handlerAddMetrics(obj.(*unstructured.Unstructured))
+		},
+		UpdateFunc: func(oldObj, obj interface{}) {
+			m.handlerUpdateMetrics(obj.(*unstructured.Unstructured))
+		},
+		DeleteFunc: func(obj interface{}) {
+			m.handlerDeleteMetrics(obj.(*unstructured.Unstructured))
+		},
+	}
+	sharedInformer.AddEventHandler(handlers)
+	go sharedInformer.Run(stopCh)
+
+	// wait forever
+	select {}
+}
+
+func (m *MetricsController) handlerAddMetrics(obj *unstructured.Unstructured) {
+
+	delete := false
+	spec := obj.Object["spec"].(map[string]interface{})
+
+	m.setMetricTestStatus(delete, obj.GetName(), spec["result"].(bool))
+	m.setMetricAssertionStatus(delete, obj.GetName(), spec["assertions"].(map[string]interface{}))
+	m.setMetricTotalTests(delete)
+	m.setMetricTotalTestsPassed(delete, spec["result"].(bool))
+	m.setMetricTotalTestsFailed(delete, spec["result"].(bool))
+}
+
+func (m *MetricsController) handlerUpdateMetrics(obj *unstructured.Unstructured) {
+	delete := false
+	spec := obj.Object["spec"].(map[string]interface{})
+
+	m.setMetricTestStatus(delete, obj.GetName(), spec["result"].(bool))
+	m.setMetricAssertionStatus(delete, obj.GetName(), spec["assertions"].(map[string]interface{}))
+}
+
+func (m *MetricsController) handlerDeleteMetrics(obj *unstructured.Unstructured) {
+
+	delete := true
+	spec := obj.Object["spec"].(map[string]interface{})
+
+	m.setMetricTestStatus(delete, obj.GetName(), spec["result"].(bool))
+	m.setMetricAssertionStatus(delete, obj.GetName(), spec["assertions"].(map[string]interface{}))
+	m.setMetricTotalTests(delete)
+	m.setMetricTotalTestsPassed(delete, spec["result"].(bool))
+	m.setMetricTotalTestsFailed(delete, spec["result"].(bool))
 
 }
 
-func (mv *MetricsValues) Store(testName string, result bool, assertionResults map[string]interface{}) {
+func (m *MetricsController) setMetricTestStatus(delete bool, key string, value bool) {
+	if delete {
+		m.Metrics.TestStatus.DeleteLabelValues(key)
+		return
+	}
+	m.Metrics.TestStatus.WithLabelValues(key).Set(getPromVal(value))
+}
 
-	set := func(result bool) float64 {
-		if result {
-			return 1
-		} else {
-			return 0
+func (m *MetricsController) setMetricAssertionStatus(delete bool, testName string, assertions map[string]interface{}) {
+
+	if delete {
+		for key, _ := range assertions {
+			m.Metrics.AssertionStatus.DeleteLabelValues(testName, key)
 		}
+		return
 	}
 
-	for key, val := range assertionResults {
-		mv.AssertionStatus[key] = set(val.(bool))
+	for key, value := range assertions {
+		m.Metrics.AssertionStatus.WithLabelValues(testName, key).Set(getPromVal(value.(bool)))
 	}
-
-	mv.TotalTestsFailed += set(!result)
-	mv.TotalTestsPassed += set(result)
-	mv.TestStatus[testName] = set(result)
-	mv.TotalTests += 1
 }
 
-func (mv *MetricsValues) Publish(ms *Server) {
-
-	for key, value := range mv.TestStatus {
-		ms.Metrics.TestStatus.WithLabelValues(key).Set(value)
+func (m *MetricsController) setMetricTotalTests(delete bool) {
+	if delete {
+		m.Metrics.TotalTests.Dec()
+		return
 	}
+	m.Metrics.TotalTests.Inc()
+}
 
-	for key, value := range mv.AssertionStatus {
-		ms.Metrics.AssertionStatus.WithLabelValues(key).Set(value)
-
+func (m *MetricsController) setMetricTotalTestsPassed(delete bool, result bool) {
+	if delete {
+		m.Metrics.TotalTestsPassed.Sub(getPromVal(result))
+		return
 	}
+	m.Metrics.TotalTestsPassed.Add(getPromVal(result))
+}
 
-	ms.Metrics.TotalTestsFailed.Set(mv.TotalTestsFailed)
-	ms.Metrics.TotalTestsPassed.Set(mv.TotalTestsPassed)
-	ms.Metrics.TotalTests.Set(mv.TotalTests)
+func (m *MetricsController) setMetricTotalTestsFailed(delete bool, result bool) {
+	if delete {
+		m.Metrics.TotalTestsFailed.Sub(getPromVal(!result))
+		return
+	}
+	m.Metrics.TotalTestsFailed.Add(getPromVal(!result))
+}
+
+func getPromVal(result bool) float64 {
+	if result {
+		return 1
+	}
+	return 0
 }

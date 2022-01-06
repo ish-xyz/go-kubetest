@@ -88,13 +88,13 @@ func exec(cmd *cobra.Command, args []string) {
 	port, err := strconv.Atoi(metricsAddressList[1])
 	handleErr(err)
 
+	metricsCtrl := metrics.NewMetricsController(dynclient, address, port)
+
 	// initiate objects
 	prv := provisioner.NewProvisioner(restConfig, client, dynclient)
 	asrt := assert.NewAssert(prv)
-
 	ldr = loader.NewKubernetesLoader(prv)
-	ms := metrics.NewServer(address, port)
-	controllerInstance := controller.NewController(ldr, prv, ms, asrt)
+	controllerInstance := controller.NewController(ldr, prv, metricsCtrl, asrt)
 
 	// Prepare selectors
 	sl := make(map[string]interface{}, len(selectors))

@@ -8,8 +8,8 @@ import (
 )
 
 type Controller struct {
-	Loader        loader.Loader
-	Provisioner   provisioner.Provisioner
-	MetricsServer *metrics.Server
-	Assert        *assert.Assert
+	Loader            loader.Loader
+	Provisioner       provisioner.Provisioner
+	MetricsController *metrics.MetricsController
+	Assert            *assert.Assert
 }

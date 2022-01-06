@@ -17,6 +17,8 @@ spec:
               properties:
                 data:
                   x-kubernetes-preserve-unknown-fields: true
+              required:
+              - data
   scope: Namespaced
   names:
     plural: testresources

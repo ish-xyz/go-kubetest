@@ -1,6 +1,9 @@
 package metrics
 
-import "github.com/prometheus/client_golang/prometheus"
+import (
+	"github.com/prometheus/client_golang/prometheus"
+	"k8s.io/client-go/dynamic"
+)
 
 type Metrics struct {
 	TestStatus       *prometheus.GaugeVec
@@ -10,17 +13,10 @@ type Metrics struct {
 	AssertionStatus  *prometheus.GaugeVec
 }
 
-type MetricsValues struct {
-	TestStatus       map[string]float64
-	TotalTests       float64
-	TotalTestsPassed float64
-	TotalTestsFailed float64
-	AssertionStatus  map[string]float64
-}
-
-type Server struct {
-	Port    int
-	Address string
-	Path    string
-	Metrics Metrics
+type MetricsController struct {
+	DynClient dynamic.Interface
+	Port      int
+	Address   string
+	Path      string
+	Metrics   Metrics
 }

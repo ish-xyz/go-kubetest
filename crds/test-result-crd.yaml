@@ -19,6 +19,15 @@ spec:
                   type: boolean
                 assertions:
                   x-kubernetes-preserve-unknown-fields: true
+              required:
+              - result
+              - assertions
+      additionalPrinterColumns:
+      - name: Result
+        type: boolean
+        description: The result of the test
+        jsonPath: .spec.result
+
   scope: Namespaced
   names:
     plural: testresults

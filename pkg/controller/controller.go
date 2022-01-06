@@ -18,12 +18,18 @@ import (
 const defaultMaxWait = "60s"
 
 // Return a new instance for controller
-func NewController(ldr loader.Loader, prv provisioner.Provisioner, ms *metrics.Server, a *assert.Assert) *Controller {
+func NewController(
+	ldr loader.Loader,
+	prv provisioner.Provisioner,
+	mc *metrics.MetricsController,
+	a *assert.Assert,
+) *Controller {
+
 	return &Controller{
-		Loader:        ldr,
-		Provisioner:   prv,
-		MetricsServer: ms,
-		Assert:        a,
+		Loader:            ldr,
+		Provisioner:       prv,
+		MetricsController: mc,
+		Assert:            a,
 	}
 }
 
@@ -43,13 +49,13 @@ func (ctrl *Controller) Run(
 	}
 
 	if !once {
-		logrus.Infof("Starting metrics server at :%d", ctrl.MetricsServer.Port)
-		go ctrl.MetricsServer.Serve()
+		logrus.Infof("Starting metrics server at :%d", ctrl.MetricsController.Port)
+		go ctrl.MetricsController.Run(namespace)
 	}
 
 	logrus.Info("Starting controller")
 	for {
-		metricsValues := metrics.NewMetricsValues()
+
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
 
@@ -57,14 +63,12 @@ func (ctrl *Controller) Run(
 			errors := ctrl.Setup(ctx, test.ObjectsList)
 			if !ctrl.WaitForCreation(ctx, test.Setup.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be created, skipping test '%s'", test.Name)
-				metricsValues.Store(test.Name, false, nil)
 				ctrl.CreateTestResult(ctx, test.Name, false, nil)
 				continue
 			}
 
 			// Run the actual tests and store results
 			result, asrtRes := ctrl.Assert.Run(test, errors)
-			metricsValues.Store(test.Name, result, asrtRes)
 			err = ctrl.CreateTestResult(ctx, test.Name, result, asrtRes)
 			if err != nil {
 				logrus.Warningln("error creating test results %v", err)
@@ -79,7 +83,6 @@ func (ctrl *Controller) Run(
 		}
 
 		logrus.Debug("Push new metrics to server")
-		metricsValues.Publish(ctrl.MetricsServer)
 
 		if once {
 			logrus.Infof("Tests finished, results have been created")
