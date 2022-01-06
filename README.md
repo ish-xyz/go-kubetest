@@ -1,8 +1,9 @@
 # go-kubetest: Kubernetes integration tests
 
-## Abstract
-
 ![go-kubetest logo](/assets/images/logo.png)
+<br>
+
+## Abstract
 
 Go-kubetest is a tool to run integrations tests on kubernetes clusters, by defining simple custom resources. Go-kubetest can run in 2 modes:
 
@@ -16,8 +17,6 @@ A user could run `kubectl get testresults` and quickly see how many tests have f
 
 Go-kubetest is intended to be used to run integration tests or behaviour testing on Kubernetes only.
 
-<br>
-<br>
 
 ### Test Definition
 
