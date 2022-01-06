@@ -1,5 +1,4 @@
 - Kubernetes provisioner: cleanup repeated code
-- Rework metrics to fetch data from CRDs
 - Prepare Dockerfile & Chart
 - Add unit tests everywhere (should have done that before I know :P)
 - Create more test examples

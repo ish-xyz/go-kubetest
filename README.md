@@ -20,9 +20,9 @@ Go-kubetest is intended to be used to run integration tests or behaviour testing
 
 ### Test Definition
 
-As mentioned above TestDefinition is a CRD. It has 3 required "fields": setup, teardown, assert. Although, the fields are required, there's no requirement in the fields content. Let me explain this point with an example.
+As mentioned above TestDefinition is a CRD. It has 3 required "fields": setup, teardown, assert. Although, the fields are required, they can be empty. This is what I have defined as "soft test". Let me explain with an example.
 
-The following is a TestDefinition that **only** ensures that a set of resources are present within a Kubernetes cluster:
+The following is a TestDefinition (soft test) that **only** ensures that a set of resources are present within a Kubernetes cluster:
 
 ```
 apiVersion: go-kubetest.io/v1
@@ -62,7 +62,7 @@ spec:
 ```
 As you can see in the above spec **setup** and **teardown** are defined as empty dicts, this means that if we run the go-kubetest controller, it won't create or delete any resource from the cluster, it will just ensure that the ones defined in the **assert** field exist.
 
-Let's take in consideration another example:
+On the other hand, sometimes we might want to run more complex tests that create, delete, and ensure that things are running in our clusters, this is what I have defined as **hard tests**. Let's take in consideration an example of hard test:
 
 ```
 apiVersion: go-kubetest.io/v1
@@ -96,7 +96,20 @@ spec:
         timeout: 30s
 ```
 
-....
+We will explain what a TestResource is in the next paragraph, but for now think of it as plain Kubernetes manifests that can be applied or deleted.
+
+In the above example, the TestDefinition will tell the controller to create the resources defined in "namespaces" a TestResource.
+The controller will then wait for some resources (setup.WaitFor) to be created, run some assertions and ensure that the namespaces have been created. Finally, it will delete the resources defined in teardown (teardown.WaitFor).
+
+Obviously, this mechanic can be applied to **any** resource in a given Kubernetes cluster, and not only namespaces.
+
+
+**Assertions Types**:
+
+At the moment there are only 2 types of assertion: expectedResources and expectedErrors.
+
+(TODO)
+
 
 
 ### Test Resource:
