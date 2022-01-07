@@ -188,8 +188,7 @@ As second assertion, we say that go-kubetest should try to fetch the resource po
 
 **ONE SHOT MODE**:
 
-[![asciicast](https://asciinema.org/a/Pwy2eq8j5rGlbAoMrETOJIScG.svg)](https://asciinema.org/a/Pwy2eq8j5rGlbAoMrETOJIScG)
-
+![terminal](./assets/images/terminal.gif)
 
 
 ### Additional Options:

@@ -1,9 +1,9 @@
 apiVersion: go-kubetest.io/v1
 kind: TestDefinition
 metadata:
-  name: basic-tests
+  name: e2e-tests
 spec:
-  - name: namespace_creation
+  - name: namespaces
     resources:
     - namespaces
     setup:
@@ -13,7 +13,7 @@ spec:
       - resource: v1:Namespace:namespace-2
         timeout: 120s
     assert:
-    - name: count_namespaces
+    - name: count-namespaces
       type: expectedResources
       resource: v1:Namespace
       timeout: 120s
@@ -28,7 +28,7 @@ spec:
       - resource: v1:Namespace:namespace-2
         timeout: 120s
 
-  - name: deployment_creation
+  - name: deployment
     resources:
     - deployment
     setup:
@@ -36,13 +36,33 @@ spec:
       - resource: apps/v1:Deployment:default:nginx-deployment
         timeout: 120s
     assert:
-    - name: count_deployments 
+    - name: count-deployments 
       type: expectedResources
       resource: apps/v1:Deployment:default
       timeout: 120s
       count: 1
       selectors:
         metadata.labels.app: nginx
+    teardown:
+      waitFor:
+      - resource: apps/v1:Deployment:default:nginx-deployment
+        timeout: 120s
+
+  - name: pvc
+    resources:
+    - pvc
+    setup:
+      waitFor:
+      - resource: v1:Pvc:default:kubetest-pvc
+        timeout: 120s
+    assert:
+    - name: count-pvc
+      type: expectedResources
+      resource: v1:Pvc:default
+      timeout: 300s
+      count: 1
+      selectors:
+        metadata.name: kubetest-pvc
     teardown:
       waitFor:
       - resource: apps/v1:Deployment:default:nginx-deployment

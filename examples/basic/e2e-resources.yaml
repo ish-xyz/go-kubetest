@@ -49,3 +49,19 @@ spec:
             image: nginx:1.14.2
             ports:
             - containerPort: 80
+---
+apiVersion: go-kubetest.io/v1
+kind: TestResource
+metadata:
+  name: pvc
+spec:
+  data: |
+    apiVersion: v1
+    kind: PersistentVolume
+    metadata:
+      name: kubetest-pvc
+    spec:
+      storageClassName: standard
+      claimRef:
+        name: kubetest-pvc
+        namespace: default
