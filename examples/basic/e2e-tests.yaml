@@ -2,6 +2,8 @@ apiVersion: go-kubetest.io/v1
 kind: TestDefinition
 metadata:
   name: e2e-tests
+  labels:
+    type: hard
 spec:
   - name: namespaces
     resources:
