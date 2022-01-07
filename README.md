@@ -184,8 +184,13 @@ As second assertion, we say that go-kubetest should try to fetch the resource po
 ### Test Result:
 (TODO)
 
-## Tutorial:
-(TODO)
+## DEMO:
+
+**ONE SHOT MODE**:
+
+[![asciicast](https://asciinema.org/a/Pwy2eq8j5rGlbAoMrETOJIScG.svg)](https://asciinema.org/a/Pwy2eq8j5rGlbAoMrETOJIScG)
+
+
 
 ### Additional Options:
 (TODO)

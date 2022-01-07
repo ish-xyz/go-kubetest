@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -44,13 +45,19 @@ func Execute() error {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVar(&namespace, "namespace", "", "The location where the tests definitions are (namespace or directory)")
-	rootCmd.PersistentFlags().StringVar(&metricsAddress, "metrics-address", "0.0.0.0:9000", "Run the controller in debug mode")
-	rootCmd.PersistentFlags().StringVar(&kubeconfig, "kubeconfig", "", "Kubernetes config file path")
-	rootCmd.PersistentFlags().IntVar(&interval, "interval", 1200, "The interval between one test execution and the next one")
+	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "The location where the tests definitions are (namespace or directory)")
+	rootCmd.PersistentFlags().StringVarP(&metricsAddress, "metrics-address", "m", "0.0.0.0:9000", "Run the controller in debug mode")
+	rootCmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "", "Kubernetes config file path")
+	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
-	rootCmd.PersistentFlags().BoolVar(&once, "once", false, "Run controller only once")
-	rootCmd.PersistentFlags().StringToStringVar(&selectors, "selectors", map[string]string{}, "Pass selectors for test definitions")
+	rootCmd.PersistentFlags().BoolVarP(&once, "once", "o", false, "Run controller only once")
+	rootCmd.PersistentFlags().StringToStringVarP(
+		&selectors,
+		"select",
+		"l",
+		map[string]string{},
+		"Pass the labels for test definitions. Empty selectors means all test definitions.",
+	)
 	rootCmd.MarkPersistentFlagRequired("namespace")
 }
 
@@ -99,7 +106,7 @@ func exec(cmd *cobra.Command, args []string) {
 	// Prepare selectors
 	sl := make(map[string]interface{}, len(selectors))
 	for k, v := range selectors {
-		sl[k] = v
+		sl[fmt.Sprintf("metadata.labels.%s", k)] = v
 	}
 
 	// Start controller

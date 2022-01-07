@@ -1,5 +1,5 @@
-- Kubernetes provisioner: cleanup repeated code
 - Prepare Dockerfile & Chart
 - Add unit tests everywhere (should have done that before I know :P)
 - Create more test examples
 - Complete README.md with link to examples and tutorial
+- Remove me :) 
