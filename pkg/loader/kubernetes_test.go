@@ -110,3 +110,23 @@ func TestK8SLoadManifests(t *testing.T) {
 	assert.Equal(t, res[0].GetAPIVersion(), "v1")
 	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
 }
+
+func TesGetTestDefinition(t *testing.T) {
+
+	inputData := map[string]interface{}{
+		"apiVersion": "go-kubetest.io/v1",
+		"kind":       "TestDefinition",
+		"metadata": map[string]interface{}{
+			"name": "test-input-data",
+		},
+		"spec": map[string]interface{}{
+			"assert":   map[string]interface{}{},
+			"teardown": []map[string]interface{}{},
+			"setup":    map[string]interface{}{},
+		},
+	}
+
+	res, err := getTestDefinition(inputData)
+	assert.NotNil(t, err)
+	assert.IsType(t, &TestDefinition{}, res)
+}
