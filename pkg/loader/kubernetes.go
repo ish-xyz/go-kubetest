@@ -82,24 +82,29 @@ func (ldr *KubernetesLoader) LoadTests(namespace string, selectors map[string]in
 		return nil, fmt.Errorf("can't retrieve any tests from the Kubernetes API")
 	}
 
-	for _, testDef := range testDefinitions.Items[0].Object["spec"].([]interface{}) {
+	for i := range testDefinitions.Items {
 
-		testSpec, err := getTestDefinition(testDef)
-		if err != nil {
-			logrus.Warningf("Can't convert manifest.spec into TestDefinition")
-		}
+		for _, testDefSpec := range testDefinitions.Items[i].Object["spec"].([]interface{}) {
 
-		for _, resource := range testSpec.Resources {
-			objects, err := ldr.LoadManifests(fmt.Sprintf("%s:%s", namespace, resource))
+			testSpec, err := getTestDefinition(testDefSpec)
 			if err != nil {
-				logrus.Warningf("Error while loading manifests object in test %s", testSpec.Name)
-				logrus.Debugln(err)
+				logrus.Warningf("Can't convert manifest.spec into TestDefinition")
 				continue
 			}
-			testSpec.ObjectsList = append(testSpec.ObjectsList, objects...)
+
+			for _, resource := range testSpec.Resources {
+				objects, err := ldr.LoadManifests(fmt.Sprintf("%s:%s", namespace, resource))
+				if err != nil {
+					logrus.Warningf("Error while loading manifests object in test %s", testSpec.Name)
+					logrus.Debugln(err)
+					continue
+				}
+				testSpec.ObjectsList = append(testSpec.ObjectsList, objects...)
+			}
+
+			tests = append(tests, testSpec)
 		}
 
-		tests = append(tests, testSpec)
 	}
 
 	return tests, nil

@@ -75,9 +75,12 @@ spec:
                             timeout:
                               type: string
                 required:
+                - name
+                - resources
                 - setup
                 - assert
                 - teardown
+
   scope: Namespaced
   names:
     plural: tests

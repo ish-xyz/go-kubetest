@@ -83,13 +83,13 @@ func (m *MetricsController) Run(namespace string) {
 	sharedInformer := genericInformer.Informer()
 	handlers := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
-			m.handlerAddMetrics(obj.(*unstructured.Unstructured))
+			m.AddMetrics(obj.(*unstructured.Unstructured))
 		},
 		UpdateFunc: func(oldObj, obj interface{}) {
-			m.handlerUpdateMetrics(obj.(*unstructured.Unstructured))
+			m.UpdateMetrics(obj.(*unstructured.Unstructured))
 		},
 		DeleteFunc: func(obj interface{}) {
-			m.handlerDeleteMetrics(obj.(*unstructured.Unstructured))
+			m.DeleteMetrics(obj.(*unstructured.Unstructured))
 		},
 	}
 	sharedInformer.AddEventHandler(handlers)
@@ -99,7 +99,7 @@ func (m *MetricsController) Run(namespace string) {
 	select {}
 }
 
-func (m *MetricsController) handlerAddMetrics(obj *unstructured.Unstructured) {
+func (m *MetricsController) AddMetrics(obj *unstructured.Unstructured) {
 
 	delete := false
 	spec := obj.Object["spec"].(map[string]interface{})
@@ -111,7 +111,7 @@ func (m *MetricsController) handlerAddMetrics(obj *unstructured.Unstructured) {
 	m.setMetricTotalTestsFailed(delete, spec["result"].(bool))
 }
 
-func (m *MetricsController) handlerUpdateMetrics(obj *unstructured.Unstructured) {
+func (m *MetricsController) UpdateMetrics(obj *unstructured.Unstructured) {
 	delete := false
 	spec := obj.Object["spec"].(map[string]interface{})
 
@@ -119,7 +119,7 @@ func (m *MetricsController) handlerUpdateMetrics(obj *unstructured.Unstructured)
 	m.setMetricAssertionStatus(delete, obj.GetName(), spec["assertions"].(map[string]interface{}))
 }
 
-func (m *MetricsController) handlerDeleteMetrics(obj *unstructured.Unstructured) {
+func (m *MetricsController) DeleteMetrics(obj *unstructured.Unstructured) {
 
 	delete := true
 	spec := obj.Object["spec"].(map[string]interface{})

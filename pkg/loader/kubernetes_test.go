@@ -2,7 +2,7 @@ package loader
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/ish-xyz/go-kubetest/pkg/provisioner"
@@ -27,7 +27,7 @@ func TestK8SLoadManifestsErrors(t *testing.T) {
 		map[string]interface{}{
 			"metadata.name": "name-of-resource",
 		},
-	).Return(&unstructured.UnstructuredList{}, errors.New("random error"))
+	).Return(&unstructured.UnstructuredList{}, fmt.Errorf("random error"))
 
 	// Execute
 	ldr := NewKubernetesLoader(prvMock)
@@ -111,22 +111,142 @@ func TestK8SLoadManifests(t *testing.T) {
 	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
 }
 
-func TesGetTestDefinition(t *testing.T) {
+func TestGetTestDefinition(t *testing.T) {
 
 	inputData := map[string]interface{}{
-		"apiVersion": "go-kubetest.io/v1",
-		"kind":       "TestDefinition",
-		"metadata": map[string]interface{}{
-			"name": "test-input-data",
-		},
-		"spec": map[string]interface{}{
-			"assert":   map[string]interface{}{},
-			"teardown": []map[string]interface{}{},
-			"setup":    map[string]interface{}{},
-		},
+		"name":      "input-data",
+		"resources": []string{},
+		"assert":    []map[string]interface{}{},
+		"teardown":  map[string]interface{}{},
+		"setup":     map[string]interface{}{},
 	}
 
 	res, err := getTestDefinition(inputData)
-	assert.NotNil(t, err)
+	assert.Nil(t, err)
 	assert.IsType(t, &TestDefinition{}, res)
+	assert.Equal(t, res.Name, "input-data")
+}
+
+func TestGetTestDefinitionErrors(t *testing.T) {
+
+	wrongData := map[string]interface{}{
+		"name":      123,
+		"resources": "wrong-data",
+	}
+
+	res, err := getTestDefinition(wrongData)
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+}
+
+func TestLoadTestsEmpty(t *testing.T) {
+
+	// Prepare mock and data
+	namespace := "default"
+	selectors := map[string]interface{}{
+		"metadata.labels.type": "soft",
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		"ListWithSelectors",
+		context.TODO(),
+		map[string]string{
+			"apiVersion": "go-kubetest.io/v1",
+			"kind":       "TestDefinition",
+			"namespace":  namespace,
+		},
+		selectors,
+	).Return(&unstructured.UnstructuredList{}, nil)
+
+	// Execute
+	ldr := NewKubernetesLoader(prvMock)
+	res, err := ldr.LoadTests(namespace, selectors)
+
+	// Assertions
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
+}
+
+func TestLoadTestsErrors(t *testing.T) {
+
+	// Prepare mock and data
+	namespace := "default"
+	selectors := map[string]interface{}{
+		"metadata.labels.type": "soft",
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		"ListWithSelectors",
+		context.TODO(),
+		map[string]string{
+			"apiVersion": "go-kubetest.io/v1",
+			"kind":       "TestDefinition",
+			"namespace":  namespace,
+		},
+		selectors,
+	).Return(&unstructured.UnstructuredList{}, fmt.Errorf("failed to fetch data."))
+
+	// Execute
+	ldr := NewKubernetesLoader(prvMock)
+	res, err := ldr.LoadTests(namespace, selectors)
+
+	// Assertions
+	assert.NotNil(t, err)
+	assert.Nil(t, res)
+
+	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
+}
+
+func TestLoadTests(t *testing.T) {
+
+	innerTestName := "inner-test-name"
+	returnData := &unstructured.UnstructuredList{
+		Items: []unstructured.Unstructured{
+			{
+				Object: map[string]interface{}{
+					"apiVersion": "go-kubetest.io/v1",
+					"kind":       "TestDefinition",
+					"metadata": map[string]interface{}{
+						"name": "test-input-data",
+					},
+					"spec": []interface{}{
+						map[string]interface{}{"name": innerTestName},
+					},
+				},
+			},
+		},
+	}
+	// Prepare mock and data
+	namespace := "default"
+	selectors := map[string]interface{}{
+		"metadata.labels.type": "soft",
+	}
+
+	prvMock := new(provisioner.ProvisionerMock)
+	prvMock.On(
+		"ListWithSelectors",
+		context.TODO(),
+		map[string]string{
+			"apiVersion": "go-kubetest.io/v1",
+			"kind":       "TestDefinition",
+			"namespace":  namespace,
+		},
+		selectors,
+	).Return(returnData, nil)
+
+	// Execute
+	ldr := NewKubernetesLoader(prvMock)
+	res, err := ldr.LoadTests(namespace, selectors)
+
+	// Assertions
+	assert.Nil(t, err)
+	assert.IsType(t, []*TestDefinition{}, res)
+	assert.NotNil(t, res)
+	assert.Equal(t, res[0].Name, innerTestName)
+
+	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
 }
