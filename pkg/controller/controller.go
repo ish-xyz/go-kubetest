@@ -71,7 +71,7 @@ func (ctrl *Controller) Run(
 			result, asrtRes := ctrl.Assert.Run(test, errors)
 			err = ctrl.CreateTestResult(ctx, test.Name, result, asrtRes)
 			if err != nil {
-				logrus.Warningln("error creating test results %v", err)
+				logrus.Warningf("error creating test results %v", err)
 			}
 
 			// Delete resources and wait for deletion
