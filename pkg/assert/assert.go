@@ -60,7 +60,12 @@ func expectedErrors(expErrors, actErrors []string) bool {
 // Check if the retrieved objects match the expected count
 func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) bool {
 
-	apiVersion, kind, namespace := unpackResource(assertion.Resource)
+	apiVersion, kind, namespace, err := unpackResource(assertion.Resource)
+	if err != nil {
+		logrus.Warningf("assertion %s failed with error: %v", assertion.Name, err)
+		return false
+	}
+
 	passed, interval := false, 2
 	limit := getMaxRetries(assertion.Timeout, interval)
 
@@ -75,6 +80,7 @@ func expectedResources(prv provisioner.Provisioner, assertion loader.Assertion) 
 			},
 			assertion.Selectors,
 		)
+
 		if err != nil || len(objects.Items) != assertion.Count {
 			logrus.Debugln(err)
 			logrus.Debugln("retrying to fetch resources during assertion 'expectedErrors' ...")

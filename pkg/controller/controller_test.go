@@ -38,7 +38,7 @@ func TestGetMaxRetriesErrors(t *testing.T) {
 	// Will default to 60s
 	limit := getMaxRetries("wrongString", 6)
 
-	assert.Equal(t, limit, 10)
+	assert.Equal(t, 10, limit)
 }
 
 func TestSetup(t *testing.T) {
@@ -273,5 +273,4 @@ func TestWaitForCreationErrors(t *testing.T) {
 
 	assert.False(t, result)
 	prvMock.AssertNumberOfCalls(t, testedMethod, 2)
-
 }

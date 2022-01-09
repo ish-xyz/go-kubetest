@@ -1,6 +1,7 @@
 package assert
 
 import (
+	"fmt"
 	"strings"
 	"time"
 )
@@ -18,14 +19,19 @@ func getMaxRetries(waitTime string, interval int) int {
 
 }
 
-func unpackResource(resourcePath string) (string, string, string) {
+func unpackResource(resourcePath string) (string, string, string, error) {
 
 	path := strings.TrimSuffix(strings.TrimPrefix(resourcePath, ":"), ":")
 	nvk := strings.Split(path, ":")
 
-	if len(nvk) < 3 {
-		return nvk[0], nvk[1], ""
+	if len(nvk) == 2 {
+		return nvk[0], nvk[1], "", nil
 	}
 
-	return nvk[0], nvk[1], nvk[2]
+	if len(nvk) == 3 {
+		return nvk[0], nvk[1], nvk[2], nil
+	}
+
+	return "", "", "", fmt.Errorf("can't unpack resource path, wrong syntax")
+
 }

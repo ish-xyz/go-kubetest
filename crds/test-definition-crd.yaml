@@ -36,9 +36,9 @@ spec:
                               type: string
                             timeout:
                               type: string
-                        required:
-                        - resource
-                        - timeout
+                          required:
+                          - resource
+                          - timeout
                   assert:
                     type: array
                     items:
@@ -62,6 +62,9 @@ spec:
                             type: string
                         selectors:
                           x-kubernetes-preserve-unknown-fields: true
+                      required:
+                      - type
+                      - name
                   teardown:
                     type: object
                     properties:
