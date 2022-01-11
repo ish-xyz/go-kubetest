@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
+	"runtime/pprof"
 	"strconv"
 	"strings"
 	"time"
@@ -25,6 +27,7 @@ var (
 	namespace      string // required flag
 	kubeconfig     string
 	metricsAddress string
+	cpuProfile     string
 	interval       int
 	debug          bool
 	once           bool
@@ -48,6 +51,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&namespace, "namespace", "n", "", "The location where the tests definitions are (namespace or directory)")
 	rootCmd.PersistentFlags().StringVarP(&metricsAddress, "metrics-address", "m", "0.0.0.0:9000", "Run the controller in debug mode")
 	rootCmd.PersistentFlags().StringVarP(&kubeconfig, "kubeconfig", "k", "", "Kubernetes config file path")
+	rootCmd.PersistentFlags().StringVarP(&cpuProfile, "cpu-profile", "p", "", "Path to save the cpu-profile file")
 	rootCmd.PersistentFlags().IntVarP(&interval, "interval", "i", 1200, "The interval between one test execution and the next one")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "Run the controller in debug mode")
 	rootCmd.PersistentFlags().BoolVarP(&once, "once", "o", false, "Run controller only once")
@@ -72,6 +76,13 @@ func exec(cmd *cobra.Command, args []string) {
 	var restConfig *rest.Config
 	var err error
 	var ldr loader.Loader
+
+	if cpuProfile != "" {
+		f, err := os.Create(cpuProfile)
+		handleErr(err)
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
 
 	// preliminary checks
 	if debug {

@@ -57,7 +57,7 @@ metadata:
 spec:
   data: |
     apiVersion: v1
-    kind: PersistentVolume
+    kind: PersistentVolumeClaim
     metadata:
       name: kubetest-pvc
     spec:

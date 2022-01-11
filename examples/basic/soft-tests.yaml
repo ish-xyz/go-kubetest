@@ -12,6 +12,7 @@ spec:
     assert:
     - name: namespace
       type: expectedResources
+      resource: v1:Namespace
       timeout: 10s
       count: 1
       selectors:

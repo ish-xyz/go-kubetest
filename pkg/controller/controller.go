@@ -64,6 +64,7 @@ func (ctrl *Controller) Run(
 			if !ctrl.WaitForCreation(ctx, test.Setup.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be created, skipping test '%s'", test.Name)
 				ctrl.CreateTestResult(ctx, test.Name, false, nil)
+				// TODO this causes a bug
 				continue
 			}
 
@@ -109,17 +110,21 @@ func (ctrl *Controller) WaitForCreation(ctx context.Context, resources []loader.
 		logrus.Debugf("Waiting for resource %s, retrying every %ds for %d times", resource.Resource, interval, limit)
 		for counter := 0; counter < limit; counter++ {
 
-			obj, _ := ctrl.Provisioner.ListWithSelectors(
+			obj, err := ctrl.Provisioner.ListWithSelectors(
 				ctx,
 				gvkData,
 				map[string]interface{}{
 					"metadata.name": gvkData["name"],
 				},
 			)
-			if len(obj.Items) != 0 {
-				created = true
-				logrus.Debugf("resource %s has been created.", resource.Resource)
-				break
+			if err != nil {
+				logrus.Debugf("Error retrieving resource %s", resource.Resource)
+			} else {
+				if len(obj.Items) != 0 {
+					created = true
+					logrus.Debugf("resource %s has been created.", resource.Resource)
+					break
+				}
 			}
 			time.Sleep(time.Duration(interval) * time.Second)
 		}
@@ -153,10 +158,14 @@ func (ctrl *Controller) WaitForDeletion(ctx context.Context, resources []loader.
 					"metadata.name": gvkData["name"],
 				},
 			)
-			if len(obj.Items) == 0 {
-				logrus.Debugf("resource %s has been deleted.", resource.Resource)
-				deleted = true
-				break
+			if err != nil {
+				logrus.Debugf("Error retrieving resource %s", resource.Resource)
+			} else {
+				if len(obj.Items) == 0 {
+					logrus.Debugf("resource %s has been deleted.", resource.Resource)
+					deleted = true
+					break
+				}
 			}
 			time.Sleep(time.Duration(interval) * time.Second)
 		}

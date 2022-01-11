@@ -278,5 +278,5 @@ Kubetest run as a controller and exposes 4 simple metrics about the integration 
 [CLI Reference](./docs/cli-reference.md)
 <br>
 
-[Design Document](./docs/design.md)
+[Profiling](./docs/profiling.md)
 <br>
