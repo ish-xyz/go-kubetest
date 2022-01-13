@@ -21,6 +21,8 @@ spec:
       name: namespace-2
     spec: {}
     status: {}
+
+# Below resources are not used
 ---
 apiVersion: go-kubetest.io/v1
 kind: TestResource

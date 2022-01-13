@@ -42,12 +42,6 @@ func (ctrl *Controller) Run(
 	once bool,
 ) error {
 
-	testsList, err := ctrl.Loader.LoadTests(namespace, selectors)
-	if err != nil {
-		logrus.Fatal(err)
-		return err
-	}
-
 	if !once {
 		logrus.Infof("Starting metrics server at :%d", ctrl.MetricsController.Port)
 		go ctrl.MetricsController.Run(namespace)
@@ -55,40 +49,51 @@ func (ctrl *Controller) Run(
 
 	logrus.Info("Starting controller")
 	for {
+		testsList, err := ctrl.Loader.LoadTests(namespace, selectors)
+		if err != nil {
+			logrus.Fatal(err)
+			return err
+		}
 
 		for _, test := range testsList {
 			logrus.Infof("Running test: '%s'", test.Name)
 
 			// Create resources and wait for creation
+			asrtRes := make(map[string]interface{})
 			errors := ctrl.Setup(ctx, test.ObjectsList)
 			if !ctrl.WaitForCreation(ctx, test.Setup.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be created, skipping test '%s'", test.Name)
-				ctrl.CreateTestResult(ctx, test.Name, false, nil)
-				// TODO this causes a bug
+				asrtRes["wait_for_creation"] = false
+				ctrl.CreateTestResult(ctx, test.Name, false, asrtRes)
 				continue
 			}
 
-			// Run the actual tests and store results
+			// Run the actual tests
 			result, asrtRes := ctrl.Assert.Run(test, errors)
-			err = ctrl.CreateTestResult(ctx, test.Name, result, asrtRes)
-			if err != nil {
-				logrus.Warningf("error creating test results %v", err)
-			}
 
 			// Delete resources and wait for deletion
 			ctrl.Teardown(ctx, test.ObjectsList)
 			if !ctrl.WaitForDeletion(ctx, test.Teardown.WaitFor) {
 				logrus.Errorf("Error while waiting for resource/s to be deleted, test: '%s'", test.Name)
-				continue
+				result = false
+				asrtRes["wait_for_creation"] = true
+				asrtRes["wait_for_deletion"] = false
+			}
+
+			// Create test results
+			asrtRes["wait_for_creation"] = true
+			asrtRes["wait_for_deletion"] = true
+			err = ctrl.CreateTestResult(ctx, test.Name, result, asrtRes)
+			if err != nil {
+				logrus.Warningf("error creating test results %v", err)
 			}
 		}
-
-		logrus.Debug("Push new metrics to server")
 
 		if once {
 			logrus.Infof("Tests finished, results have been created")
 			return nil
 		}
+
 		logrus.Infof("Waiting for next execution (%s)", wait)
 		time.Sleep(wait)
 	}

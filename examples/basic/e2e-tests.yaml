@@ -1,71 +1,30 @@
 apiVersion: go-kubetest.io/v1
 kind: TestDefinition
 metadata:
-  name: e2e-tests
+  name: namespaces
   labels:
     type: hard
 spec:
-  - name: namespaces
-    resources:
-    - namespaces
-    setup:
-      waitFor:
-      - resource: v1:Namespace:namespace-1
-        timeout: 120s
-      - resource: v1:Namespace:namespace-2
-        timeout: 120s
-    assert:
-    - name: count-namespaces
-      type: expectedResources
-      resource: v1:Namespace
+  resources:
+  - namespaces
+  setup:
+    waitFor:
+    - resource: v1:Namespace:namespace-1
       timeout: 120s
-      count: 2
-      selectors:
-        status.phase: Active
-        metadata.labels.myCustomLabel: myCustomValue
-    teardown:
-      waitFor:
-      - resource: v1:Namespace:namespace-1
-        timeout: 120s
-      - resource: v1:Namespace:namespace-2
-        timeout: 120s
-
-  - name: deployment
-    resources:
-    - deployment
-    setup:
-      waitFor:
-      - resource: apps/v1:Deployment:default:nginx-deployment
-        timeout: 120s
-    assert:
-    - name: count-deployments 
-      type: expectedResources
-      resource: apps/v1:Deployment:default
+    - resource: v1:Namespace:namespace-2
       timeout: 120s
-      count: 1
-      selectors:
-        metadata.labels.app: nginx
-    teardown:
-      waitFor:
-      - resource: apps/v1:Deployment:default:nginx-deployment
-        timeout: 120s
-
-  - name: pvc
-    resources:
-    - pvc
-    setup:
-      waitFor:
-      - resource: v1:Pvc:default:kubetest-pvc
-        timeout: 120s
-    assert:
-    - name: count-pvc
-      type: expectedResources
-      resource: v1:Pvc:default
-      timeout: 300s
-      count: 1
-      selectors:
-        metadata.name: kubetest-pvc
-    teardown:
-      waitFor:
-      - resource: apps/v1:Deployment:default:nginx-deployment
-        timeout: 120s
+  assert:
+  - name: count-namespaces
+    type: expectedResources
+    resource: v1:Namespace
+    timeout: 120s
+    count: 2
+    selectors:
+      status.phase: Active
+      metadata.labels.myCustomLabel: myCustomValue
+  teardown:
+    waitFor:
+    - resource: v1:Namespace:namespace-1
+      timeout: 120s
+    - resource: v1:Namespace:namespace-2
+      timeout: 120s

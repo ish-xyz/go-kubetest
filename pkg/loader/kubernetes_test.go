@@ -203,7 +203,6 @@ func TestLoadTestsErrors(t *testing.T) {
 
 func TestLoadTests(t *testing.T) {
 
-	innerTestName := "inner-test-name"
 	returnData := &unstructured.UnstructuredList{
 		Items: []unstructured.Unstructured{
 			{
@@ -213,8 +212,8 @@ func TestLoadTests(t *testing.T) {
 					"metadata": map[string]interface{}{
 						"name": "test-input-data",
 					},
-					"spec": []interface{}{
-						map[string]interface{}{"name": innerTestName},
+					"spec": map[string]interface{}{
+						"resources": []interface{}{},
 					},
 				},
 			},
@@ -246,7 +245,7 @@ func TestLoadTests(t *testing.T) {
 	assert.Nil(t, err)
 	assert.IsType(t, []*TestDefinition{}, res)
 	assert.NotNil(t, res)
-	assert.Equal(t, res[0].Name, innerTestName)
+	assert.Equal(t, res[0].Name, "test-input-data")
 
 	prvMock.AssertNumberOfCalls(t, "ListWithSelectors", 1)
 }

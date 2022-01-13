@@ -197,9 +197,16 @@ func (k *Kubernetes) ListWithSelectors(ctx context.Context, objData map[string]s
 		FieldSelector: strings.TrimSuffix(fieldSelector, ","),
 		LabelSelector: strings.TrimSuffix(labelSelector, ","),
 	})
-	if err != nil {
+
+	if retrievedObjects == nil {
+		retrievedObjects = &unstructured.UnstructuredList{
+			Items: []unstructured.Unstructured{},
+		}
+	}
+
+	if err != nil || retrievedObjects == nil {
 		logrus.Debugln(err)
-		return nil, err
+		return retrievedObjects, err
 	}
 
 	logrus.Debugf("Number of objects retrieved %d", len(retrievedObjects.Items))

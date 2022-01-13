@@ -13,76 +13,70 @@ spec:
           type: object
           properties:
             spec:
-              type: array
-              items:
-                type: object
-                properties:
-                  name:
+              type: object
+              properties:
+                resources:
+                  type: array
+                  items:
                     type: string
-                    pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
-                  resources:
-                    type: array
-                    items:
-                      type: string
-                  setup:
-                    type: object
-                    properties:
-                      waitFor:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            resource:
-                              type: string
-                            timeout:
-                              type: string
-                          required:
-                          - resource
-                          - timeout
-                  assert:
-                    type: array
-                    items:
-                      type: object
-                      properties:
-                        name:
-                          type: string
-                          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
-                        type:
-                          type: string
-                          pattern: '^(expectedResources|expectedErrors)$'
-                        resource:
-                          type: string
-                        timeout:
-                          type: string
-                        count:
-                          type: integer
-                        errors:
-                          type: array
-                          items:
+                setup:
+                  type: object
+                  properties:
+                    waitFor:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          resource:
                             type: string
-                        selectors:
-                          x-kubernetes-preserve-unknown-fields: true
-                      required:
-                      - type
-                      - name
-                  teardown:
+                          timeout:
+                            type: string
+                        required:
+                        - resource
+                        - timeout
+                assert:
+                  type: array
+                  items:
                     type: object
                     properties:
-                      waitFor:
+                      name:
+                        type: string
+                        pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?(\.[a-z0-9]([-a-z0-9]*[a-z0-9])?)*$'
+                      type:
+                        type: string
+                        pattern: '^(expectedResources|expectedErrors)$'
+                      resource:
+                        type: string
+                      timeout:
+                        type: string
+                      count:
+                        type: integer
+                      errors:
                         type: array
                         items:
-                          type: object
-                          properties:
-                            resource:
-                              type: string
-                            timeout:
-                              type: string
-                required:
-                - name
-                - resources
-                - setup
-                - assert
-                - teardown
+                          type: string
+                      selectors:
+                        x-kubernetes-preserve-unknown-fields: true
+                    required:
+                    - type
+                    - name
+                teardown:
+                  type: object
+                  properties:
+                    waitFor:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          resource:
+                            type: string
+                          timeout:
+                            type: string
+              required:
+              - resources
+              - setup
+              - assert
+              - teardown
 
   scope: Namespaced
   names:
