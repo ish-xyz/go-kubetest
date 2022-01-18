@@ -23,9 +23,9 @@ Go-kubetest is intended to be used to run integration tests or behaviour testing
 
 ### TEST DEFINITION
 
-As mentioned above TestDefinition is a CRD. It has 3 required fields: setup, teardown, assert.<br>
+As mentioned above TestDefinition is a custom resource. It has 3 required fields: setup, teardown, assert.<br>
 Although, the fields are required, they can be empty. This is what I have defined as "soft test".<br>
-A "soft test" is a type of integration tests that only verifies that certain resources are present in the cluster and it does not create or delete any Kubernetes resource.
+A "soft test" is a type of integration tests that only verifies a number of resources are present in the cluster and it does not create nor delete any Kubernetes resource.
 
 Let's see the following example.s
 
